@@ -113,7 +113,8 @@
                             android:layout_weight="1"
                             android:textSize="16dp"
                             android:layout_marginStart="15dp"
-                            android:layout_marginVertical="5dp"
+                            android:layout_marginTop="7dp"
+                            android:layout_marginBottom="5dp"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
                         <ImageView
@@ -123,7 +124,7 @@
                             android:scaleY="0.8"
                             android:scaleX="0.8"
                             android:layout_height="match_parent"
-                            android:paddingStart="10dp"
+                            android:paddingHorizontal="5dp"
                             app:tint="@color/white" />
                         <ImageView
                             android:id="@+id/timetableCollapse"
@@ -160,12 +161,54 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
                         <TextView
+                            android:text="Birthdays :"
+                            android:layout_weight="1"
+                            android:textSize="16dp"
+                            android:layout_marginStart="15dp"
+                            android:layout_marginTop="7dp"
+                            android:layout_marginBottom="5dp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+                        <ImageView
+                            android:id="@+id/birthdayLoad"
+                            android:src="@drawable/baseline_arrow_drop_down_24"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:paddingHorizontal="15dp"
+                            app:tint="@color/white" />
+                    </LinearLayout>
+                    <ListView
+                        android:id="@+id/birthdayList"
+                        android:layout_marginHorizontal="10dp"
+                        android:layout_marginBottom="5dp"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:clipToPadding="true"
+                android:layout_marginHorizontal="15dp"
+                android:layout_marginVertical="7dp"
+                android:animateLayoutChanges="true"
+                app:cardCornerRadius="25dp"
+                android:layout_height="wrap_content">
+                <LinearLayout
+                    android:layout_margin="5dp"
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
                             android:id="@+id/attendanceHeading"
                             android:text="Attendance :"
                             android:layout_weight="1"
                             android:textSize="16dp"
                             android:layout_marginStart="15dp"
-                            android:layout_marginVertical="5dp"
+                            android:layout_marginTop="7dp"
+                            android:layout_marginBottom="5dp"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
                         <ImageView

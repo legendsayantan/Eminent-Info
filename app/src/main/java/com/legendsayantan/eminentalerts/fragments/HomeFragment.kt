@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ListView
 import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
@@ -18,13 +19,16 @@ import android.widget.Toast
 import androidx.viewpager2.widget.ViewPager2
 import com.legendsayantan.eminentalerts.MainActivity
 import com.legendsayantan.eminentalerts.R
+import com.legendsayantan.eminentalerts.adapters.BirthdayListAdapter
 import com.legendsayantan.eminentalerts.adapters.ViewPagerAdapter
 import com.legendsayantan.eminentalerts.data.Account
 import com.legendsayantan.eminentalerts.data.PeriodSlot
 import com.legendsayantan.eminentalerts.utils.Misc.Companion.beautifyCase
 import com.legendsayantan.eminentalerts.utils.Misc.Companion.generateColor
 import com.legendsayantan.eminentalerts.utils.Misc.Companion.relativeTime
+import com.legendsayantan.eminentalerts.utils.Misc.Companion.shortMonth
 import com.legendsayantan.eminentalerts.utils.Scrapers
+import java.text.SimpleDateFormat
 import java.time.DayOfWeek
 import java.util.Calendar
 import kotlin.math.abs
@@ -80,6 +84,7 @@ class HomeFragment : Fragment() {
         }
 
         initialiseTimeTable(acc)
+        initialiseBirthdays(acc)
         initialiseAttendance(acc)
 
     }
@@ -208,37 +213,75 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun initialiseBirthdays(acc: Account, collapsed: Boolean = true) {
+        val openBtn = requireView().findViewById<ImageView>(R.id.birthdayLoad)
+        val listView = requireView().findViewById<ListView>(R.id.birthdayList)
+        openBtn.rotation = if (collapsed) 90f else 0f
+        openBtn.setOnClickListener {
+            if (collapsed) {
+                scrapers.getBirthdays(acc, Calendar.getInstance()) {
+                    activity().runOnUiThread {
+                        if (it != null) {
+                            val adapter = BirthdayListAdapter(activity(), it)
+                            listView.adapter = adapter
+                            initialiseBirthdays(acc, !collapsed)
+                        } else {
+                            Toast.makeText(context, "Failed to load.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }else {
+                listView.adapter = null
+                initialiseBirthdays(acc, !collapsed)
+            }
+        }
+    }
+
     private fun initialiseAttendance(acc: Account) {
         val refreshBtn = requireView().findViewById<ImageView>(R.id.attendanceRefresh)
         val attendanceTable = requireView().findViewById<TableLayout>(R.id.attendanceTable)
         attendanceTable.removeAllViews()
         try {
             val headingRow = TableRow(context)
-            headingRow.addView(TextView(context))
+            headingRow.addView(TextView(context).apply {
+                text = "Last updated ${SimpleDateFormat("DD/MM HH:mm").format(Calendar.getInstance().apply { timeInMillis = storage.getAttendance(acc.ID).lastUpdated }.time)}"
+                alpha = 0.5f
+                setPadding(10, 10, 20, 10)
+            })
+            val discarded = arrayListOf<Int>()
             storage.getAttendance(acc.ID).subjects[0].attend.entries.sortedBy { it.key }.forEach {
-                val heading = TextView(context)
-                heading.text =
-                    if (it.key == 0) "Overall" else ((it.key % 12) + 1).toString() + "/" + (it.key / 12) % 100
-                heading.setPadding(10, 10, 10, 10)
-                headingRow.addView(heading)
+                if (it.value == 0f) {
+                    discarded.add(it.key)
+                } else {
+                    val heading = TextView(context)
+                    heading.text =
+                        if (it.key == 0) "Overall" else shortMonth((it.key % 12) + 1) + " " + (it.key / 12) % 100
+                    heading.setPadding(10, 10, 20, 10)
+                    heading.gravity = Gravity.END
+                    heading.textSize = 16f
+                    headingRow.addView(heading)
+                }
             }
             headingRow.addView(TextView(context).apply { text = "\t\t" })
             attendanceTable.addView(headingRow)
             storage.getAttendance(acc.ID).subjects.forEach { sub ->
                 val row = TableRow(context)
                 val name = TextView(context)
-                name.setPadding(10, 10, 10, 10)
+                name.setPadding(10, 10, 20, 10)
                 name.text = sub.name
+                name.textSize = 15f
                 row.addView(name)
-                sub.attend.entries.sortedBy { it.key }.forEach {
-                    val text = TextView(context)
-                    text.text = "${it.value}%"
-                    text.setPadding(10, 10, 10, 10)
-                    if (it.value > 0) {
-                        text.setTextColor(generateColor(it.value))
+                sub.attend.entries.filter { !discarded.contains(it.key) }.sortedBy { it.key }
+                    .forEach {
+                        val text = TextView(context)
+                        text.text = "${it.value}%"
+                        text.setPadding(10, 10, 20, 10)
+                        text.gravity = Gravity.END
+                        if (it.value > 0) {
+                            text.setTextColor(generateColor(it.value))
+                        }
+                        row.addView(text)
                     }
-                    row.addView(text)
-                }
                 attendanceTable.addView(row)
             }
         } catch (_: Exception) {

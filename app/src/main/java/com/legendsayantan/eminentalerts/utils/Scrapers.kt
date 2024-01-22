@@ -3,6 +3,7 @@ package com.legendsayantan.eminentalerts.utils
 import android.app.Activity
 import com.legendsayantan.eminentalerts.data.Account
 import com.legendsayantan.eminentalerts.data.AccountAttendance
+import com.legendsayantan.eminentalerts.data.Birthday
 import com.legendsayantan.eminentalerts.data.DaySlots
 import com.legendsayantan.eminentalerts.data.PeriodSlot
 import com.legendsayantan.eminentalerts.data.SubjectAttendance
@@ -63,7 +64,7 @@ class Scrapers(val activity: Activity) {
                     .cookies(response.cookies())
                     .referrer(loginResponse.url().toString())
                     .header("Origin", getBaseUrl(username))
-                    .header("X-csrf-token", csrfToken)
+                    .header("X-Csrf-Token", csrfToken)
                     .method(Connection.Method.POST)
                     .execute()
                 val accessor = accessorResponse.parse().getElementsByTag("a").first()?.attr("href")
@@ -169,21 +170,21 @@ class Scrapers(val activity: Activity) {
                 .execute()
             val doc = response.parse()
             val subjectSelector = doc.getElementById("advance_search_subject_id")
-            val accountAttendance = AccountAttendance(arrayListOf())
+            val accountAttendance = AccountAttendance(arrayListOf(),System.currentTimeMillis())
             subjectSelector?.children()?.forEach { option ->
                 val c = Calendar.getInstance()
                 c.add(Calendar.MONTH, 1)
                 val subAttendance = SubjectAttendance(option.text().beautifyCase(), hashMapOf())
                 for (i in 0..6) {
-                    var formData = mapOf<String,String?>()
-                    if(i==0){
+                    var formData = mapOf<String, String?>()
+                    if (i == 0) {
                         formData = mapOf(
                             "authenticity_token" to extractAuthToken(doc.html()),
                             "advance_search[subject_id]" to option.`val`(),
                             "advance_search[mode]" to "Overall",
                             "commit" to "► OK"
                         )
-                    }else{
+                    } else {
                         c.add(Calendar.MONTH, -1)
                         formData = mapOf(
                             "authenticity_token" to extractAuthToken(doc.html()),
@@ -208,15 +209,19 @@ class Scrapers(val activity: Activity) {
 
 
                     val html = formResponse.body().split("\")")[0]
-                        .replace("Element.update(\"report\", \"","")
+                        .replace("Element.update(\"report\", \"", "")
                         .replace("\\n", "")
-                        .replace("\\","")
+                        .replace("\\", "")
 
                     val layout = Element("div")
                     layout.html(html)
 
-                    val attended = layout.getElementsByClass("col-20").last()?.text()?.replace("%","")?.toFloatOrNull()
-                    subAttendance.attend[if(i==0) 0 else (c.get(Calendar.YEAR)*12+c.get(Calendar.MONTH))] = attended?:0f
+                    val attended =
+                        layout.getElementsByClass("col-20").last()?.text()?.replace("%", "")
+                            ?.toFloatOrNull()
+                    subAttendance.attend[if (i == 0) 0 else (c.get(Calendar.YEAR) * 12 + c.get(
+                        Calendar.MONTH
+                    ))] = attended ?: 0f
                 }
                 accountAttendance.subjects.add(subAttendance)
             }
@@ -226,17 +231,42 @@ class Scrapers(val activity: Activity) {
 
     }
 
-    fun getAccessor(account: Account) {
-        val usedUrl = "${getBaseUrl(account.ID)}/user/show_quick_links"
+    fun getBirthdays(
+        account: Account,
+        calendar: Calendar,
+        callback: (ArrayList<Birthday>?) -> Unit
+    ) {
+        val usedUrl = "${getBaseUrl(account.ID)}/data_palettes/update_palette"
         Thread {
             try {
+                val formData = mapOf(
+                    "palette[cur_date]" to "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH) + 1}-${
+                        calendar.get(
+                            Calendar.DAY_OF_MONTH
+                        )
+                    }",
+                    "palette[palette_name]" to "birthdays"
+                )
                 val response: Connection.Response = Jsoup.connect(usedUrl)
+                    .data(formData)
                     .cookie("_fedena_session_", account.sessionKey)
                     .referrer(getBaseUrl(account.ID) + "/data_palettes")
                     .header("Origin", getBaseUrl(account.ID))
+                    .header("X-Csrf-Token", account.csrfToken)
                     .method(Connection.Method.POST)
                     .execute()
-                println(response.body())
+                val list = arrayListOf<Birthday>()
+                val doc = response.parse()
+                doc.getElementsByClass("birthday-subcontent").forEach {
+                    list.add(
+                        Birthday(
+                            it.getElementsByClass("subcontent-header")[0].text().beautifyCase(),
+                            it.getElementsByClass("subcontent-info")[0].text().replace("Batch :","").beautifyCase().trim(),
+                            it.getElementsByTag("img")[0].attr("src")
+                        )
+                    )
+                }
+                callback(list)
             } catch (e: IOException) {
                 e.printStackTrace()
             }

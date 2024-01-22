@@ -4,7 +4,6 @@ import android.graphics.Color
 import com.legendsayantan.eminentalerts.data.PeriodSlot
 import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 
@@ -46,6 +45,10 @@ class Misc {
                 e.printStackTrace()
                 return -1L
             }
+        }
+        fun shortMonth(monthNumber: Int): String {
+            val monthAbbreviations = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+            return monthAbbreviations[monthNumber - 1]
         }
 
         fun relativeTime(t: Long,now:Long): String {

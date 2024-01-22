@@ -3,6 +3,6 @@ package com.legendsayantan.eminentalerts.data
 /**
  * @author legendsayantan
  */
-data class AccountAttendance(val subjects:ArrayList<SubjectAttendance>){
+data class AccountAttendance(val subjects:ArrayList<SubjectAttendance>,val lastUpdated:Long){
 
 }
