@@ -1,10 +1,12 @@
 package com.legendsayantan.eminentalerts.utils
 
+import android.graphics.Color
 import com.legendsayantan.eminentalerts.data.PeriodSlot
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import kotlin.math.abs
 
 /**
  * @author legendsayantan
@@ -48,26 +50,46 @@ class Misc {
 
         fun relativeTime(t: Long,now:Long): String {
             var time = t
+            val c = Calendar.getInstance()
+            c.timeInMillis = abs(now - time)
             return if (time < now) {
                 time += PeriodSlot.duration
-                if (time > now) "Now"
+                if (time > now) {
+                    if((now-t)>(PeriodSlot.duration/2)) {
+                        c.timeInMillis = abs(now - time)
+                        c.get(Calendar.MINUTE).toString()+" more minutes"
+                    }else{
+                        "Started "+c.get(Calendar.MINUTE).toString()+" min ago"
+                    }
+                }
                 else {
-                    val c = Calendar.getInstance()
-                    c.timeInMillis = now - time
-                    (
+                    (   "Finished "+
                         if (c.get(Calendar.HOUR_OF_DAY) > 0) c.get(Calendar.HOUR_OF_DAY).toString() + "h "
                         else ""
-                    ).toString() + c.get(Calendar.MINUTE).toString() + "min ago"
+                    ) + c.get(Calendar.MINUTE).toString() + "min ago"
                 }
             }else{
-                val c = Calendar.getInstance()
-                c.timeInMillis = time-now
-                "In " + {
+                "In " + (
                     if (c.get(Calendar.HOUR_OF_DAY) > 0) c.get(Calendar.HOUR_OF_DAY).toString() + "h "
                     else ""
-                }.toString() + c.get(Calendar.MINUTE).toString() + "min"
+                ).toString() + c.get(Calendar.MINUTE).toString() + "min"
             }
             return ""
+        }
+
+        fun generateColor(value: Float): Int {
+            // Ensure value is within the range [0, 100]
+            val adjustedValue = when {
+                value < 0f -> 0f
+                value > 100f -> 100f
+                else -> value
+            }
+
+            // Calculate hue based on the adjusted value
+            val hue = (adjustedValue * 1f)-30 // Adjust multiplier as needed
+
+            // Create a color using HSL values
+            return Color.HSVToColor(floatArrayOf(hue, 0.75f, 1f))
         }
 
         fun String.beautifyCase(): String {

@@ -2,8 +2,10 @@ package com.legendsayantan.eminentalerts.utils
 
 import android.app.Activity
 import com.legendsayantan.eminentalerts.data.Account
+import com.legendsayantan.eminentalerts.data.AccountAttendance
 import com.legendsayantan.eminentalerts.data.DaySlots
 import com.legendsayantan.eminentalerts.data.PeriodSlot
+import com.legendsayantan.eminentalerts.data.SubjectAttendance
 import com.legendsayantan.eminentalerts.data.TimeTable
 import com.legendsayantan.eminentalerts.utils.Misc.Companion.beautifyCase
 import com.legendsayantan.eminentalerts.utils.Misc.Companion.extractIntegers
@@ -11,10 +13,11 @@ import com.legendsayantan.eminentalerts.utils.Misc.Companion.getDayIndex
 import com.legendsayantan.eminentalerts.utils.Misc.Companion.timeAsUnix
 import org.jsoup.Connection
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Element
 import java.io.IOException
-import java.sql.Time
 import java.text.SimpleDateFormat
-import java.util.UUID
+import java.util.Calendar
+import java.util.Locale
 
 /**
  * @author legendsayantan
@@ -94,7 +97,7 @@ class Scrapers(val activity: Activity) {
         }.start()
     }
 
-    fun retrieveTimetable(account: Account,callback:(TimeTable?)->Unit) {
+    fun retrieveTimetable(account: Account, callback: (TimeTable?) -> Unit) {
         val usedUrl = "${getBaseUrl(account.ID)}/timetable/student_view/${account.accessor}"
         Thread {
             try {
@@ -113,26 +116,32 @@ class Scrapers(val activity: Activity) {
                     val slots = arrayListOf<PeriodSlot>()
                     tr.getElementsByTag("td").forEach {
                         slots.add(
-                            it.getElementsByClass("class_timings").let { timing->
-                                if(timing.size>0){
+                            it.getElementsByClass("class_timings").let { timing ->
+                                if (timing.size > 0) {
                                     PeriodSlot(
                                         timeAsUnix(
                                             timing[0].text().split("-")[0].trim()
                                         ),
-                                        it.getElementsByClass("class_timing_tooltip")[0].getElementsByClass("sub-line")[0].text().trim().beautifyCase(),
-                                        it.getElementsByClass("employee")[0].text().trim().beautifyCase()
+                                        it.getElementsByClass("class_timing_tooltip")[0].getElementsByClass(
+                                            "sub-line"
+                                        )[0].text().trim().beautifyCase(),
+                                        it.getElementsByClass("employee")[0].text().trim()
+                                            .beautifyCase()
                                     )
-                                }else if(it.getElementsByClass("blank_timings").size>0){
+                                } else if (it.getElementsByClass("blank_timings").size > 0) {
                                     PeriodSlot(
                                         timeAsUnix(
-                                            it.getElementsByClass("blank_timings")[0].text().split("-")[0].trim()
+                                            it.getElementsByClass("blank_timings")[0].text()
+                                                .split("-")[0].trim()
                                         ),
-                                        it.getElementsByClass("subject1")[0].text().trim().beautifyCase(),
-                                        it.getElementsByClass("employee")[0].text().trim().beautifyCase()
+                                        it.getElementsByClass("subject1")[0].text().trim()
+                                            .beautifyCase(),
+                                        it.getElementsByClass("employee")[0].text().trim()
+                                            .beautifyCase()
                                     )
 
-                                }else PeriodSlot(
-                                    slots.last().startTime+PeriodSlot.duration,
+                                } else PeriodSlot(
+                                    slots.last().startTime + PeriodSlot.duration,
                                     "Break",
                                     ""
                                 )
@@ -148,6 +157,73 @@ class Scrapers(val activity: Activity) {
                 e.printStackTrace()
             }
         }.start()
+    }
+
+    fun retrieveAttendance(acc: Account, callback: (AccountAttendance?) -> Unit) {
+        val usedUrl = "${getBaseUrl(acc.ID)}/student_attendance/student/${acc.accessor}"
+        Thread {
+            val response: Connection.Response = Jsoup.connect(usedUrl)
+                .header("Origin", getBaseUrl(acc.ID))
+                .method(Connection.Method.GET)
+                .cookie("_fedena_session_", acc.sessionKey)
+                .execute()
+            val doc = response.parse()
+            val subjectSelector = doc.getElementById("advance_search_subject_id")
+            val accountAttendance = AccountAttendance(arrayListOf())
+            subjectSelector?.children()?.forEach { option ->
+                val c = Calendar.getInstance()
+                c.add(Calendar.MONTH, 1)
+                val subAttendance = SubjectAttendance(option.text().beautifyCase(), hashMapOf())
+                for (i in 0..6) {
+                    var formData = mapOf<String,String?>()
+                    if(i==0){
+                        formData = mapOf(
+                            "authenticity_token" to extractAuthToken(doc.html()),
+                            "advance_search[subject_id]" to option.`val`(),
+                            "advance_search[mode]" to "Overall",
+                            "commit" to "► OK"
+                        )
+                    }else{
+                        c.add(Calendar.MONTH, -1)
+                        formData = mapOf(
+                            "authenticity_token" to extractAuthToken(doc.html()),
+                            "advance_search[subject_id]" to option.`val`(),
+                            "advance_search[mode]" to "Monthly",
+                            "advance_search[month]" to (c.get(Calendar.MONTH) + 1).toString(),
+                            "advance_search[year]" to c.get(Calendar.YEAR).toString(),
+                            "commit" to "► OK"
+                        )
+                    }
+
+                    // Submit the form with the provided data
+                    val formResponse: Connection.Response = Jsoup.connect(usedUrl)
+                        .data(formData)
+                        .header("X-Csrf-Token", acc.csrfToken)
+                        .method(Connection.Method.POST)
+                        .cookie(
+                            "_fedena_session_",
+                            acc.sessionKey
+                        )  // Use cookies from the previous response
+                        .execute()
+
+
+                    val html = formResponse.body().split("\")")[0]
+                        .replace("Element.update(\"report\", \"","")
+                        .replace("\\n", "")
+                        .replace("\\","")
+
+                    val layout = Element("div")
+                    layout.html(html)
+
+                    val attended = layout.getElementsByClass("col-20").last()?.text()?.replace("%","")?.toFloatOrNull()
+                    subAttendance.attend[if(i==0) 0 else (c.get(Calendar.YEAR)*12+c.get(Calendar.MONTH))] = attended?:0f
+                }
+                accountAttendance.subjects.add(subAttendance)
+            }
+            callback(accountAttendance)
+
+        }.start()
+
     }
 
     fun getAccessor(account: Account) {

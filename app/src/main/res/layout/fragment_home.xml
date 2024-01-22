@@ -2,14 +2,18 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:animateLayoutChanges="true"
+    android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".fragments.HomeFragment">
     <ScrollView
+        android:animateLayoutChanges="true"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
         <LinearLayout
             android:orientation="vertical"
+            android:animateLayoutChanges="true"
+            android:clipChildren="true"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
             <Space
@@ -86,10 +90,13 @@
             </LinearLayout>
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
+                android:animationCache="true"
+                android:clipToPadding="true"
+                android:clipChildren="true"
                 android:layout_marginHorizontal="15dp"
-                android:animateLayoutChanges="true"
                 android:layout_marginVertical="7dp"
                 app:cardCornerRadius="25dp"
+                android:animateLayoutChanges="true"
                 android:layout_height="wrap_content">
                 <LinearLayout
                     android:layout_margin="5dp"
@@ -129,13 +136,74 @@
                     <LinearLayout
                         android:id="@+id/timetableContainer"
                         android:layout_marginBottom="5dp"
-                        android:layout_marginHorizontal="5dp"
                         android:animateLayoutChanges="true"
+                        android:layout_marginHorizontal="5dp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:clipToPadding="true"
+                android:layout_marginHorizontal="15dp"
+                android:layout_marginVertical="7dp"
+                android:animateLayoutChanges="true"
+                app:cardCornerRadius="25dp"
+                android:layout_height="wrap_content">
+                <LinearLayout
+                    android:layout_margin="5dp"
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:id="@+id/attendanceHeading"
+                            android:text="Attendance :"
+                            android:layout_weight="1"
+                            android:textSize="16dp"
+                            android:layout_marginStart="15dp"
+                            android:layout_marginVertical="5dp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+                        <ImageView
+                            android:id="@+id/attendanceRefresh"
+                            android:src="@drawable/baseline_refresh_24"
+                            android:layout_width="wrap_content"
+                            android:scaleY="0.8"
+                            android:scaleX="0.8"
+                            android:layout_height="match_parent"
+                            android:paddingHorizontal="15dp"
+                            app:tint="@color/white" />
+                    </LinearLayout>
+                    <HorizontalScrollView
+                        android:animateLayoutChanges="true"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <LinearLayout
+                            android:id="@+id/attendanceContainer"
+                            android:layout_marginBottom="12dp"
+                            android:layout_marginHorizontal="12dp"
+                            android:animateLayoutChanges="true"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" >
+
+                            <TableLayout
+                                android:id="@+id/attendanceTable"
+                                android:divider="@color/mid"
+                                android:animateLayoutChanges="true"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent">
+
+                                </TableLayout>
+                        </LinearLayout>
+                    </HorizontalScrollView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
         </LinearLayout>
     </ScrollView>
 </FrameLayout>

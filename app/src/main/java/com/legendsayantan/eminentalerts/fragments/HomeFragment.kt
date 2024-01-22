@@ -11,6 +11,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TableLayout
+import android.widget.TableRow
 import android.widget.TextView
 import android.widget.Toast
 import androidx.viewpager2.widget.ViewPager2
@@ -20,6 +22,7 @@ import com.legendsayantan.eminentalerts.adapters.ViewPagerAdapter
 import com.legendsayantan.eminentalerts.data.Account
 import com.legendsayantan.eminentalerts.data.PeriodSlot
 import com.legendsayantan.eminentalerts.utils.Misc.Companion.beautifyCase
+import com.legendsayantan.eminentalerts.utils.Misc.Companion.generateColor
 import com.legendsayantan.eminentalerts.utils.Misc.Companion.relativeTime
 import com.legendsayantan.eminentalerts.utils.Scrapers
 import java.time.DayOfWeek
@@ -77,7 +80,7 @@ class HomeFragment : Fragment() {
         }
 
         initialiseTimeTable(acc)
-
+        initialiseAttendance(acc)
 
     }
 
@@ -90,20 +93,26 @@ class HomeFragment : Fragment() {
         val table = storage.getTimeTable(acc.ID)
         container.removeAllViews()
         collapseBtn.rotation = if (collapsed) 90f else 0f
-        heading.text = if(collapsed)"Today :" else "Timetable :"
+        heading.text = if (collapsed) "Today :" else "Timetable :"
         try {
             if (collapsed) {
                 val viewPager = ViewPager2(context)
                 val adapter = ViewPagerAdapter(activity())
                 var todaySlots =
                     table.daySlots[Calendar.getInstance().get(Calendar.DAY_OF_WEEK) - 1]
-                val now = System.currentTimeMillis() % 86400000
-                if((todaySlots.periods.last().startTime+(PeriodSlot.duration*2))<now){
-                    todaySlots = table.daySlots[Calendar.getInstance().get(Calendar.DAY_OF_WEEK)%7]
+                val now = Calendar.getInstance().timeInMillis - Calendar.getInstance()
+                    .apply {
+                        set(Calendar.HOUR, 0);
+                        set(Calendar.MINUTE, 0);
+                        set(Calendar.SECOND, 0)
+                    }.timeInMillis
+                if ((todaySlots.periods.last().startTime + (PeriodSlot.duration * 2)) < now) {
+                    todaySlots =
+                        table.daySlots[Calendar.getInstance().get(Calendar.DAY_OF_WEEK) % 7]
                     heading.text = "Tomorrow :"
                 }
                 val timeSlot =
-                    todaySlots.periods.indexOfFirst { (now - it.startTime) < PeriodSlot.duration }
+                    todaySlots.periods.indexOfFirst { abs(now - it.startTime) < PeriodSlot.duration }
                 todaySlots.periods.forEachIndexed { index, periodSlot ->
                     adapter.addFragment(
                         SlotFragment.newInstance(
@@ -130,18 +139,18 @@ class HomeFragment : Fragment() {
             } else {
                 val viewPagers = List(7) { i -> ViewPager2(context) }
                 var lastSearch = ""
-                val onLongClick :(String)->Unit= { subToFind->
-                    if(lastSearch==subToFind){
+                val onLongClick: (String) -> Unit = { subToFind ->
+                    if (lastSearch == subToFind) {
                         viewPagers.forEach { it.animate().alpha(1f) }
                         lastSearch = ""
-                    }else{
+                    } else {
                         lastSearch = subToFind
                         table.daySlots.forEachIndexed { index, daySlots ->
-                            val findex = daySlots.periods.indexOfFirst { it.subject==subToFind }
-                            if(findex>=0) {
+                            val findex = daySlots.periods.indexOfFirst { it.subject == subToFind }
+                            if (findex >= 0) {
                                 viewPagers[index].animate().alpha(1f)
                                 viewPagers[index].setCurrentItem(findex, true)
-                            }else{
+                            } else {
                                 viewPagers[index].animate().alpha(0.25f)
                             }
                         }
@@ -170,22 +179,23 @@ class HomeFragment : Fragment() {
                     }
                     val textView = TextView(context)
                     textView.text = DayOfWeek.values()[index].name.beautifyCase()
-                    textView.setPadding(0,5,0,0)
+                    textView.setPadding(0, 5, 0, 0)
                     textView.gravity = Gravity.CENTER
                     container.addView(viewPager)
-                    if(index+1!=viewPagers.size)container.addView(textView)
+                    if (index + 1 != viewPagers.size) container.addView(textView)
                     viewPager.isUserInputEnabled = true
                     viewPager.adapter = adapter
                 }
             }
             container.setPadding(10, 10, 10, 10)
-        } catch (_: Exception) { }
+        } catch (_: Exception) {
+        }
         refershBtn.setOnClickListener {
             refershBtn.animate().rotation(360f).setDuration(1000).start()
             scrapers.retrieveTimetable(acc) {
                 activity().runOnUiThread {
                     if (it != null) {
-                        storage.addTimeTable(acc.ID, it)
+                        storage.saveTimeTable(acc.ID, it)
                         initialiseTimeTable(acc, collapsed)
                     } else {
                         Toast.makeText(context, "Failed to reload.", Toast.LENGTH_SHORT).show()
@@ -197,6 +207,57 @@ class HomeFragment : Fragment() {
             initialiseTimeTable(acc, !collapsed)
         }
     }
+
+    private fun initialiseAttendance(acc: Account) {
+        val refreshBtn = requireView().findViewById<ImageView>(R.id.attendanceRefresh)
+        val attendanceTable = requireView().findViewById<TableLayout>(R.id.attendanceTable)
+        attendanceTable.removeAllViews()
+        try {
+            val headingRow = TableRow(context)
+            headingRow.addView(TextView(context))
+            storage.getAttendance(acc.ID).subjects[0].attend.entries.sortedBy { it.key }.forEach {
+                val heading = TextView(context)
+                heading.text =
+                    if (it.key == 0) "Overall" else ((it.key % 12) + 1).toString() + "/" + (it.key / 12) % 100
+                heading.setPadding(10, 10, 10, 10)
+                headingRow.addView(heading)
+            }
+            headingRow.addView(TextView(context).apply { text = "\t\t" })
+            attendanceTable.addView(headingRow)
+            storage.getAttendance(acc.ID).subjects.forEach { sub ->
+                val row = TableRow(context)
+                val name = TextView(context)
+                name.setPadding(10, 10, 10, 10)
+                name.text = sub.name
+                row.addView(name)
+                sub.attend.entries.sortedBy { it.key }.forEach {
+                    val text = TextView(context)
+                    text.text = "${it.value}%"
+                    text.setPadding(10, 10, 10, 10)
+                    if (it.value > 0) {
+                        text.setTextColor(generateColor(it.value))
+                    }
+                    row.addView(text)
+                }
+                attendanceTable.addView(row)
+            }
+        } catch (_: Exception) {
+        }
+        refreshBtn.setOnClickListener {
+            refreshBtn.animate().rotation(360f).setDuration(1000).start()
+            scrapers.retrieveAttendance(acc) {
+                activity().runOnUiThread {
+                    if (it != null) {
+                        storage.saveAttendance(acc.ID, it)
+                        initialiseAttendance(acc)
+                    } else {
+                        Toast.makeText(context, "Failed to reload.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
 
     companion object {
         /**

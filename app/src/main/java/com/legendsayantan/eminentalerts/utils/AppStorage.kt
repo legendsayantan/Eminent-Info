@@ -3,6 +3,7 @@ package com.legendsayantan.eminentalerts.utils
 import android.content.Context
 import com.google.gson.Gson
 import com.legendsayantan.eminentalerts.data.Account
+import com.legendsayantan.eminentalerts.data.AccountAttendance
 import com.legendsayantan.eminentalerts.data.TimeTable
 
 /**
@@ -39,11 +40,22 @@ class AppStorage(context: Context) {
     }
 
     val timetables = context.getSharedPreferences("timetables",Context.MODE_PRIVATE)
-    fun addTimeTable(ID:String,table: TimeTable){
+    fun saveTimeTable(ID:String, table: TimeTable){
         timetables.edit().putString(ID, Gson().toJson(table)).apply()
     }
     fun getTimeTable(ID:String):TimeTable{
         return Gson().fromJson(timetables.getString(ID,"{}"),TimeTable::class.java)
+    }
+
+    val notifications = context.getSharedPreferences("notifications",Context.MODE_PRIVATE)
+
+    val attendance  = context.getSharedPreferences("attendance",Context.MODE_PRIVATE)
+
+    fun getAttendance(ID:String):AccountAttendance{
+        return Gson().fromJson(attendance.getString(ID,"{}"),AccountAttendance::class.java)
+    }
+    fun saveAttendance(ID: String, att: AccountAttendance){
+        attendance.edit().putString(ID, Gson().toJson(att)).apply()
     }
 
 }
