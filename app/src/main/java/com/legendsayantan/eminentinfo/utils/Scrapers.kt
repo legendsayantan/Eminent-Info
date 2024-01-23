@@ -275,7 +275,7 @@ class Scrapers(val context: Context) {
     }
 
     fun getNews(
-        account: Account, pastDays : Int = 6,
+        account: Account, pastDays : Int = 9,
         callback: (HashMap<Long, String>?) -> Unit
     ) {
         val usedUrl = "${getBaseUrl(account.ID)}/data_palettes/update_palette"

@@ -12,6 +12,7 @@
         <item name="pdfView_showToolbar">true</item>
         <item name="pdfView_disableScreenshots">false</item>
         <item name="pdfView_actionBarTint">@color/mid</item>
+        <item name="pdfView_backgroundColor">@color/light_blue</item>
         <item name="android:statusBarColor">@color/green</item>
     </style>
     <style name="Theme.EminentAlerts" parent="Base.Theme.EminentAlerts"/>
