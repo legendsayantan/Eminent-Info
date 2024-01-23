@@ -26,4 +26,9 @@ class MainActivity : AppCompatActivity() {
             }
         ).commit()
     }
+    fun addNewAccount(){
+        supportFragmentManager.beginTransaction().replace(
+            R.id.container, LoginFragment()
+        ).commit()
+    }
 }

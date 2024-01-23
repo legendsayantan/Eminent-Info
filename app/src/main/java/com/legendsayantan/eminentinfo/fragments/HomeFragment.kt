@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.BaseAdapter
 import android.widget.CompoundButton
 import android.widget.ImageView
@@ -101,6 +102,7 @@ class HomeFragment : Fragment() {
                 infoView.visibility = View.GONE
             } else infoView.visibility = View.VISIBLE
         }
+        infoView.setOnClickListener { manageAccount(acc) }
 
         initialiseBirthdays(acc)
         initialiseNotice(acc)
@@ -111,6 +113,92 @@ class HomeFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         initialiseTimeTable(storage.getActiveAccount())
+    }
+
+    private fun manageAccount(acc: Account) {
+        val cardView = MaterialCardView(context)
+        cardView.strokeWidth = 5
+        cardView.strokeColor = resources.getColor(R.color.mid, null)
+        cardView.radius = 75f
+        val container = LinearLayout(context)
+        container.orientation = LinearLayout.VERTICAL
+        container.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            setMargins(50, 50, 50, 50)
+        }
+        val title = TextView(context)
+        val list = ListView(context)
+        title.text = "Switch Account"
+        title.textSize = 18f
+        title.setPadding(15, 15, 15, 15)
+        title.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        title.gravity = Gravity.CENTER
+        val adapter = ArrayAdapter(
+            context,
+            android.R.layout.simple_list_item_1,
+            storage.getAllAccounts().filter { it!=acc }.map { it.name })
+        list.adapter = adapter
+        val addNew = MaterialButton(context)
+        addNew.backgroundTintList = ColorStateList.valueOf(resources.getColor(R.color.mid, null))
+        addNew.text = "Add New"
+        addNew.setTextColor(resources.getColor(R.color.white, null))
+        addNew.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            1f
+        ).apply {
+            marginEnd = 25
+            topMargin = 25
+        }
+        val logOut = MaterialButton(context)
+        logOut.backgroundTintList = ColorStateList.valueOf(resources.getColor(R.color.grey, null))
+        logOut.text = "Log Out"
+        logOut.setTextColor(resources.getColor(R.color.white, null))
+        logOut.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            1f
+        ).apply {
+            marginStart = 25
+            topMargin = 25
+        }
+        val btnContainer = LinearLayout(context)
+        btnContainer.orientation = LinearLayout.HORIZONTAL
+        btnContainer.addView(addNew)
+        btnContainer.addView(logOut)
+        container.addView(title)
+        container.addView(list)
+        container.addView(btnContainer)
+        cardView.addView(container)
+        val dialog = MaterialAlertDialogBuilder(context).setView(cardView).create()
+        dialog.show()
+        list.setOnItemClickListener { _, _, position, _ ->
+            storage.setActiveAccount(storage.getAllAccounts()[position])
+            activity().reloadUI()
+            dialog.dismiss()
+        }
+        addNew.setOnClickListener {
+            activity().addNewAccount()
+            dialog.dismiss()
+        }
+        logOut.setOnClickListener {
+            scrapers.logOut(acc) {
+                activity().runOnUiThread {
+                    if (it) {
+                        storage.deleteAccount(acc)
+                        activity().reloadUI()
+                        dialog.dismiss()
+                    } else {
+                        Toast.makeText(context, "Failed to logout.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -135,7 +223,7 @@ class HomeFragment : Fragment() {
                         set(Calendar.MONTH, 0);
                         set(Calendar.YEAR, 1970)
                     }.timeInMillis
-                if ((todaySlots.periods.last().let { it.startTime + (it.duration*2) }) < now) {
+                if ((todaySlots.periods.last().let { it.startTime + (it.duration * 2) }) < now) {
                     todaySlots =
                         table.daySlots[Calendar.getInstance().get(Calendar.DAY_OF_WEEK) % 7]
                     heading.text = "Tomorrow :"
@@ -416,11 +504,11 @@ class HomeFragment : Fragment() {
     private fun initialiseNotifications(acc: Account) {
         val image = requireView().findViewById<ImageView>(R.id.notiSettings)
         var notifications = storage.getNotificationSettings(acc.ID)
-        if(notifications.any { it }){
+        if (notifications.any { it }) {
             image.setImageResource(R.drawable.baseline_notifications_24)
             activity().requestIgnoreBatteryOptimizations()
             registerAlarmManager(notifications)
-        }else{
+        } else {
             image.setImageResource(R.drawable.baseline_notifications_none_24)
         }
         image.setOnClickListener {
@@ -430,30 +518,45 @@ class HomeFragment : Fragment() {
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    ActivityCompat.requestPermissions(activity(), arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
+                    ActivityCompat.requestPermissions(
+                        activity(),
+                        arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                        0
+                    )
                     return@setOnClickListener
                 }
             }
             val card = MaterialCardView(context)
+            card.strokeWidth = 5
+            card.strokeColor = resources.getColor(R.color.mid, null)
+            card.radius = 75f
             val container = LinearLayout(context)
             container.orientation = LinearLayout.VERTICAL
             val title = TextView(context)
             val timeTableSwitch = MaterialSwitch(context)
             val birthdaySwitch = MaterialSwitch(context)
             val noticeSwitch = MaterialSwitch(context)
-            title.text = "Get Notifications for"
+            title.text = "Notification Settings"
             title.textSize = 18f
-            title.setPadding(0,0,0,15)
+            title.setPadding(0, 0, 0, 15)
             timeTableSwitch.text = "Next Periods"
             birthdaySwitch.text = "Birthdays of classmates"
             noticeSwitch.text = "New Notices"
-            try{
+            try {
                 timeTableSwitch.isChecked = notifications[0]
                 birthdaySwitch.isChecked = notifications[1]
                 noticeSwitch.isChecked = notifications[2]
-            }catch (_:Exception){}
+            } catch (_: Exception) {
+            }
             val saveSettings = CompoundButton.OnCheckedChangeListener { _, _ ->
-                storage.saveNotificationSettings(acc.ID, arrayOf(timeTableSwitch.isChecked, birthdaySwitch.isChecked, noticeSwitch.isChecked))
+                storage.saveNotificationSettings(
+                    acc.ID,
+                    arrayOf(
+                        timeTableSwitch.isChecked,
+                        birthdaySwitch.isChecked,
+                        noticeSwitch.isChecked
+                    )
+                )
             }
             timeTableSwitch.setOnCheckedChangeListener(saveSettings)
             birthdaySwitch.setOnCheckedChangeListener(saveSettings)
@@ -496,22 +599,24 @@ class HomeFragment : Fragment() {
         listView.requestLayout()
     }
 
-    private fun registerAlarmManager(notifications:Array<Boolean>){
+    private fun registerAlarmManager(notifications: Array<Boolean>) {
         val alarmManager = activity().getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        if(notifications[0]){
+        if (notifications[0]) {
 
         }
-        if(notifications[1] || notifications[2]){
+        if (notifications[1] || notifications[2]) {
             val intent = Intent(activity(), BirthdayNotice::class.java)
-            val pendingIntent = PendingIntent.getBroadcast(activity(), 0, intent, PendingIntent.FLAG_MUTABLE)
-            try{
+            val pendingIntent =
+                PendingIntent.getBroadcast(activity(), 0, intent, PendingIntent.FLAG_MUTABLE)
+            try {
                 alarmManager.cancel(pendingIntent)
-            }catch (_:Exception){}
+            } catch (_: Exception) {
+            }
             alarmManager.setRepeating(
                 AlarmManager.RTC_WAKEUP,
                 Calendar.getInstance().apply {
-                    set(Calendar.HOUR_OF_DAY,23)
-                    set(Calendar.MINUTE,0)
+                    set(Calendar.HOUR_OF_DAY, 23)
+                    set(Calendar.MINUTE, 0)
                 }.timeInMillis,
                 1000 * 60 * 60 * 24,
                 pendingIntent
