@@ -1,6 +1,7 @@
 package com.legendsayantan.eminentinfo.utils
 
-import android.app.Activity
+import android.content.Context
+import android.os.Handler
 import com.legendsayantan.eminentinfo.data.Account
 import com.legendsayantan.eminentinfo.data.AccountAttendance
 import com.legendsayantan.eminentinfo.data.Birthday
@@ -22,7 +23,7 @@ import java.util.HashMap
 /**
  * @author legendsayantan
  */
-class Scrapers(val activity: Activity) {
+class Scrapers(val context: Context) {
 
     fun getBaseUrl(ID: String): String {
         return if (ID.contains("ECPT")) "https://ecpt.fedena.com" else "https://ecmt.fedena.com"
@@ -75,7 +76,7 @@ class Scrapers(val activity: Activity) {
                     loggedInPage.getElementById("switch-student")?.getElementsByTag("a")
                         ?.find { it.attr("href").contains("profile") }
                 //extract name
-                activity.runOnUiThread {
+                Handler(context.mainLooper).post {
                     val name = nameDisplay?.text()?.beautifyCase()
                     if (name != null) {
                         onSuccess(
@@ -89,8 +90,6 @@ class Scrapers(val activity: Activity) {
                         )
                     } else onSuccess(null)
                 }
-
-
             } catch (e: IOException) {
                 e.printStackTrace()
             }
@@ -276,7 +275,7 @@ class Scrapers(val activity: Activity) {
     }
 
     fun getNews(
-        account: Account,
+        account: Account, pastDays : Int = 6,
         callback: (HashMap<Long, String>?) -> Unit
     ) {
         val usedUrl = "${getBaseUrl(account.ID)}/data_palettes/update_palette"
@@ -286,7 +285,7 @@ class Scrapers(val activity: Activity) {
                 calendar.set(Calendar.HOUR, 0)
                 calendar.set(Calendar.MINUTE, 0)
                 val list = hashMapOf<Long, String>()
-                for (i in 0..6) {
+                for (i in 0..pastDays) {
                     val formData = mapOf(
                         "palette[cur_date]" to "${calendar.get(Calendar.YEAR)}-${
                             calendar.get(
@@ -309,7 +308,7 @@ class Scrapers(val activity: Activity) {
                         .execute()
                     val doc = response.parse()
                     doc.getElementsByClass("portlet-subcontent").forEach {
-                        if( it.getElementsByTag("a").size > 0){
+                        if (it.getElementsByTag("a").size > 0) {
                             val loadNotice =
                                 getBaseUrl(account.ID) + it.getElementsByTag("a")[0]?.attr("href")
                             val notice = Jsoup.connect(loadNotice)
@@ -318,10 +317,11 @@ class Scrapers(val activity: Activity) {
                                 .header("Origin", getBaseUrl(account.ID))
                                 .method(Connection.Method.GET)
                                 .execute()
-                            list[calendar.timeInMillis] = notice.parse().getElementById("attachments_list")
-                                ?.getElementsByTag("a")
-                                ?.get(0)
-                                ?.attr("href")?:""
+                            list[calendar.timeInMillis] =
+                                notice.parse().getElementById("attachments_list")
+                                    ?.getElementsByTag("a")
+                                    ?.get(0)
+                                    ?.attr("href") ?: ""
                             calendar.add(Calendar.MINUTE, 1)
                         }
                     }
@@ -331,6 +331,45 @@ class Scrapers(val activity: Activity) {
             } catch (e: IOException) {
                 e.printStackTrace()
                 callback(null)
+            }
+        }.start()
+    }
+
+    fun getMoreInfo(account: Account, callback: (String?) -> Unit) {
+        val usedUrl = "${getBaseUrl(account.ID)}/student/profile/${account.accessor}"
+        Thread {
+            try {
+                val response: Connection.Response = Jsoup.connect(usedUrl)
+                    .cookie("_fedena_session_", account.sessionKey)
+                    .referrer(getBaseUrl(account.ID) + "/data_palettes")
+                    .header("Origin", getBaseUrl(account.ID))
+                    .method(Connection.Method.GET)
+                    .execute()
+                val doc = response.parse()
+                val info = doc.getElementById("student_main_info")?.getElementsByTag("h4")
+                callback(info?.subList(0, 2)?.joinToString { it.text() + "\n" }
+                    ?.replace("Course :", "")?.replace("Batch :", "")?.trim())
+            } catch (e: IOException) {
+                e.printStackTrace()
+                callback(null)
+            }
+        }.start()
+    }
+
+    fun logOut(account: Account, callback: (Boolean) -> Unit) {
+        val usedUrl = "${getBaseUrl(account.ID)}/user/logout"
+        Thread {
+            try {
+                val response: Connection.Response = Jsoup.connect(usedUrl)
+                    .cookie("_fedena_session_", account.sessionKey)
+                    .referrer(getBaseUrl(account.ID) + "/data_palettes")
+                    .header("Origin", getBaseUrl(account.ID))
+                    .method(Connection.Method.GET)
+                    .execute()
+                callback(response.statusCode() == 200)
+            } catch (e: IOException) {
+                e.printStackTrace()
+                callback(false)
             }
         }.start()
     }

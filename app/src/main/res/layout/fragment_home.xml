@@ -76,17 +76,11 @@
                     android:layout_width="30dp"
                     android:layout_height="match_parent">
                     <ImageView
+                        android:id="@+id/notiSettings"
                         android:layout_width="match_parent"
-                        android:src="@drawable/baseline_notifications_24"
+                        android:src="@drawable/baseline_notifications_none_24"
                         android:layout_height="match_parent"
                         app:tint="@color/white" />
-                    <TextView
-                        android:id="@+id/notification_count"
-                        android:text="0"
-                        android:gravity="center"
-                        android:textColor="@color/green"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"/>
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </LinearLayout>
             <com.google.android.material.card.MaterialCardView

@@ -1,9 +1,15 @@
 package com.legendsayantan.eminentinfo.fragments
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import androidx.fragment.app.Fragment
@@ -11,6 +17,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
+import android.widget.CompoundButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ListView
@@ -18,16 +25,22 @@ import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.materialswitch.MaterialSwitch
 import com.legendsayantan.eminentinfo.MainActivity
 import com.legendsayantan.eminentinfo.R
 import com.legendsayantan.eminentinfo.adapters.BirthdayListAdapter
 import com.legendsayantan.eminentinfo.adapters.ViewPagerAdapter
 import com.legendsayantan.eminentinfo.data.Account
+import com.legendsayantan.eminentinfo.receivers.BirthdayNotice
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.beautifyCase
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.generateColor
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.relativeTime
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.requestIgnoreBatteryOptimizations
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.shortMonth
 import com.legendsayantan.eminentinfo.utils.Scrapers
 import com.rajat.pdfviewer.PdfViewerActivity
@@ -92,7 +105,7 @@ class HomeFragment : Fragment() {
         initialiseBirthdays(acc)
         initialiseNotice(acc)
         initialiseAttendance(acc)
-
+        initialiseNotifications(acc)
     }
 
     override fun onResume() {
@@ -122,7 +135,7 @@ class HomeFragment : Fragment() {
                         set(Calendar.MONTH, 0);
                         set(Calendar.YEAR, 1970)
                     }.timeInMillis
-                if ((todaySlots.periods.last().startTime + (todaySlots.periods[0].duration * 2)) < now) {
+                if ((todaySlots.periods.last().let { it.startTime + (it.duration*2) }) < now) {
                     todaySlots =
                         table.daySlots[Calendar.getInstance().get(Calendar.DAY_OF_WEEK) % 7]
                     heading.text = "Tomorrow :"
@@ -269,22 +282,32 @@ class HomeFragment : Fragment() {
                         if (!it.isNullOrEmpty()) {
                             val tableData = it.entries.sortedByDescending { it.key }
                                 .groupBy { SimpleDateFormat("DD/MM/YYYY").format(it.key) }
-                            tableData.forEach { map->
+                            tableData.forEach { map ->
                                 val row = TableRow(context)
                                 val date = TextView(context)
                                 date.text = map.key
                                 date.setPadding(25, 20, 25, 20)
                                 date.textSize = 16f
-                                date.setTextColor(resources.getColor(R.color.green,null))
+                                date.setTextColor(resources.getColor(R.color.green, null))
                                 row.addView(date)
                                 map.value.forEachIndexed { index, mutableEntry ->
                                     val news = MaterialButton(context)
-                                    news.strokeColor = ColorStateList.valueOf(resources.getColor(R.color.mid,null))
+                                    news.strokeColor = ColorStateList.valueOf(
+                                        resources.getColor(
+                                            R.color.mid,
+                                            null
+                                        )
+                                    )
                                     news.strokeWidth = 2
-                                    news.backgroundTintList = ColorStateList.valueOf(resources.getColor(R.color.transparent,null))
+                                    news.backgroundTintList = ColorStateList.valueOf(
+                                        resources.getColor(
+                                            R.color.transparent,
+                                            null
+                                        )
+                                    )
                                     news.text = "Notice ${index + 1}"
                                     news.textSize = 16f
-                                    news.setTextColor(resources.getColor(R.color.white,null))
+                                    news.setTextColor(resources.getColor(R.color.white, null))
                                     news.setPadding(15, 0, 15, 0)
                                     news.layoutParams = TableRow.LayoutParams(
                                         TableRow.LayoutParams.WRAP_CONTENT,
@@ -316,7 +339,7 @@ class HomeFragment : Fragment() {
                 }
             } else {
                 table.removeAllViews()
-                initialiseBirthdays(acc, !collapsed)
+                initialiseNotice(acc, !collapsed)
             }
         }
     }
@@ -390,6 +413,73 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun initialiseNotifications(acc: Account) {
+        val image = requireView().findViewById<ImageView>(R.id.notiSettings)
+        var notifications = storage.getNotificationSettings(acc.ID)
+        if(notifications.any { it }){
+            image.setImageResource(R.drawable.baseline_notifications_24)
+            activity().requestIgnoreBatteryOptimizations()
+            registerAlarmManager(notifications)
+        }else{
+            image.setImageResource(R.drawable.baseline_notifications_none_24)
+        }
+        image.setOnClickListener {
+            if (ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    ActivityCompat.requestPermissions(activity(), arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
+                    return@setOnClickListener
+                }
+            }
+            val card = MaterialCardView(context)
+            val container = LinearLayout(context)
+            container.orientation = LinearLayout.VERTICAL
+            val title = TextView(context)
+            val timeTableSwitch = MaterialSwitch(context)
+            val birthdaySwitch = MaterialSwitch(context)
+            val noticeSwitch = MaterialSwitch(context)
+            title.text = "Get Notifications for"
+            title.textSize = 18f
+            title.setPadding(0,0,0,15)
+            timeTableSwitch.text = "Next Periods"
+            birthdaySwitch.text = "Birthdays of classmates"
+            noticeSwitch.text = "New Notices"
+            try{
+                timeTableSwitch.isChecked = notifications[0]
+                birthdaySwitch.isChecked = notifications[1]
+                noticeSwitch.isChecked = notifications[2]
+            }catch (_:Exception){}
+            val saveSettings = CompoundButton.OnCheckedChangeListener { _, _ ->
+                storage.saveNotificationSettings(acc.ID, arrayOf(timeTableSwitch.isChecked, birthdaySwitch.isChecked, noticeSwitch.isChecked))
+            }
+            timeTableSwitch.setOnCheckedChangeListener(saveSettings)
+            birthdaySwitch.setOnCheckedChangeListener(saveSettings)
+            noticeSwitch.setOnCheckedChangeListener(saveSettings)
+            container.addView(title)
+            container.addView(timeTableSwitch)
+            container.addView(birthdaySwitch)
+            container.addView(noticeSwitch)
+
+            container.layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(50, 50, 50, 50)
+            }
+            card.addView(container)
+            val dialog = MaterialAlertDialogBuilder(context)
+            dialog.setView(card)
+            dialog.setOnCancelListener {
+                initialiseNotifications(acc)
+            }
+            dialog.show()
+        }
+
+    }
+
     private fun updateItems(listView: ListView, listAdapter: BaseAdapter) {
         var totalHeight = 0
         val desiredWidth =
@@ -404,6 +494,29 @@ class HomeFragment : Fragment() {
         params.height = totalHeight + (15 * (listAdapter.count - 1))
         listView.layoutParams = params
         listView.requestLayout()
+    }
+
+    private fun registerAlarmManager(notifications:Array<Boolean>){
+        val alarmManager = activity().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        if(notifications[0]){
+
+        }
+        if(notifications[1] || notifications[2]){
+            val intent = Intent(activity(), BirthdayNotice::class.java)
+            val pendingIntent = PendingIntent.getBroadcast(activity(), 0, intent, PendingIntent.FLAG_MUTABLE)
+            try{
+                alarmManager.cancel(pendingIntent)
+            }catch (_:Exception){}
+            alarmManager.setRepeating(
+                AlarmManager.RTC_WAKEUP,
+                Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY,23)
+                    set(Calendar.MINUTE,0)
+                }.timeInMillis,
+                1000 * 60 * 60 * 24,
+                pendingIntent
+            )
+        }
     }
 
     companion object {

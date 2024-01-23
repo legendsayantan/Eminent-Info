@@ -86,13 +86,22 @@ class LoginFragment : Fragment() {
             callback("",false)
             return
         }
-        Scrapers(activity()).retrieveSessionKey(ID,password){ account ->
+        Scrapers(activity()).let { scraper ->
+            scraper.retrieveSessionKey(ID,password){ account ->
             if(account != null){
-                activity().appStorage.addNewAccount(account)
+                activity().appStorage.saveAccount(account)
                 callback(account.name,true)
+                scraper.getMoreInfo(account){
+                    it?.split("\n").let { part->
+                        account.course = part?.get(0) ?: ""
+                        account.batch = part?.get(1) ?: ""
+                    }
+                    activity().appStorage.saveAccount(account)
+                }
             }else{
                 callback("",false)
             }
+        }
         }
     }
 

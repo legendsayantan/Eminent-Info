@@ -7,4 +7,7 @@
     <color name="mid">#2c6e1b</color>
     <color name="light_blue">#2865A5</color>
     <color name="transparent">#00000000</color>
+    <color name="grey">
+        #808080
+    </color>
 </resources>

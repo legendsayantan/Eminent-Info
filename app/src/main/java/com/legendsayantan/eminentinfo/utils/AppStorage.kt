@@ -12,7 +12,7 @@ import com.legendsayantan.eminentinfo.data.TimeTable
 class AppStorage(context: Context) {
     val accounts = context.getSharedPreferences("accounts",Context.MODE_PRIVATE)
 
-    fun addNewAccount(account: Account){
+    fun saveAccount(account: Account){
         accounts.edit().putString(account.ID, Gson().toJson(account)).apply()
     }
 
@@ -48,6 +48,13 @@ class AppStorage(context: Context) {
     }
 
     val notifications = context.getSharedPreferences("notifications",Context.MODE_PRIVATE)
+
+    fun getNotificationSettings(ID:String):Array<Boolean>{
+        return Gson().fromJson(notifications.getString(ID,"[]"),Array<Boolean>::class.java)
+    }
+    fun saveNotificationSettings(ID:String, settings:Array<Boolean>){
+        notifications.edit().putString(ID, Gson().toJson(settings)).apply()
+    }
 
     val attendance  = context.getSharedPreferences("attendance",Context.MODE_PRIVATE)
 

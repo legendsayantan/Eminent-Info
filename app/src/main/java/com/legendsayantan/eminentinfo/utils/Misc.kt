@@ -1,9 +1,19 @@
 package com.legendsayantan.eminentinfo.utils
 
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationCompat
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -115,6 +125,45 @@ class Misc {
         fun Context.launchUrlInBrowser(url: String) {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
             startActivity(intent)
+        }
+        @SuppressLint("BatteryLife")
+        fun Activity.requestIgnoreBatteryOptimizations() {
+            if (!(getSystemService(AppCompatActivity.POWER_SERVICE) as PowerManager).isIgnoringBatteryOptimizations(
+                    packageName
+                )
+            ) {
+                startActivity(
+                    Intent(
+                        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse(
+                            "package:$packageName"
+                        )
+                    )
+                )
+            }
+        }
+
+        @SuppressLint("MissingPermission")
+        fun Context.sendNotification(title: String, message: String, id: Int, intent: Intent? = null) {
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    "$packageName.info",
+                    "Info notifications",
+                    NotificationManager.IMPORTANCE_DEFAULT
+                )
+                channel.description = "Eminent Info"
+                notificationManager.createNotificationChannel(channel)
+            }
+            val notification = NotificationCompat.Builder(this, "$packageName.info")
+                .setContentTitle(title)
+                .setContentText(message)
+                .setSmallIcon(com.legendsayantan.eminentinfo.R.drawable.collegelogo)
+                .setAutoCancel(true)
+            if(intent!=null){
+                val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+                notification.setContentIntent(pendingIntent)
+            }
+            notificationManager.notify(id, notification.build())
         }
     }
 }
