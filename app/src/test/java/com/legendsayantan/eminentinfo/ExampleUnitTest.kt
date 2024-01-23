@@ -1,4 +1,4 @@
-package com.legendsayantan.eminentalerts
+package com.legendsayantan.eminentinfo
 
 import org.junit.Test
 

@@ -1,10 +1,10 @@
-package com.legendsayantan.eminentalerts.utils
+package com.legendsayantan.eminentinfo.utils
 
 import android.content.Context
 import com.google.gson.Gson
-import com.legendsayantan.eminentalerts.data.Account
-import com.legendsayantan.eminentalerts.data.AccountAttendance
-import com.legendsayantan.eminentalerts.data.TimeTable
+import com.legendsayantan.eminentinfo.data.Account
+import com.legendsayantan.eminentinfo.data.AccountAttendance
+import com.legendsayantan.eminentinfo.data.TimeTable
 
 /**
  * @author legendsayantan

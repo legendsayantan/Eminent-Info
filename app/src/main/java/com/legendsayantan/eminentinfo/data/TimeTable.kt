@@ -1,4 +1,4 @@
-package com.legendsayantan.eminentalerts.data
+package com.legendsayantan.eminentinfo.data
 
 /**
  * @author legendsayantan
@@ -17,6 +17,16 @@ data class TimeTable(var daySlots: Array<DaySlots>) {
 
     override fun hashCode(): Int {
         return daySlots.contentHashCode()
+    }
+
+    companion object{
+        fun optimiseTable(table: TimeTable):TimeTable{
+            val newTable = TimeTable(Array(7) { _ -> DaySlots(arrayListOf()) })
+            table.daySlots.forEachIndexed { index, daySlots ->
+                newTable.daySlots[index] = DaySlots.optimise(daySlots)
+            }
+            return newTable
+        }
     }
 
 }

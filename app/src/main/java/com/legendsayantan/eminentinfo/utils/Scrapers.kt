@@ -1,24 +1,23 @@
-package com.legendsayantan.eminentalerts.utils
+package com.legendsayantan.eminentinfo.utils
 
 import android.app.Activity
-import com.legendsayantan.eminentalerts.data.Account
-import com.legendsayantan.eminentalerts.data.AccountAttendance
-import com.legendsayantan.eminentalerts.data.Birthday
-import com.legendsayantan.eminentalerts.data.DaySlots
-import com.legendsayantan.eminentalerts.data.PeriodSlot
-import com.legendsayantan.eminentalerts.data.SubjectAttendance
-import com.legendsayantan.eminentalerts.data.TimeTable
-import com.legendsayantan.eminentalerts.utils.Misc.Companion.beautifyCase
-import com.legendsayantan.eminentalerts.utils.Misc.Companion.extractIntegers
-import com.legendsayantan.eminentalerts.utils.Misc.Companion.getDayIndex
-import com.legendsayantan.eminentalerts.utils.Misc.Companion.timeAsUnix
+import com.legendsayantan.eminentinfo.data.Account
+import com.legendsayantan.eminentinfo.data.AccountAttendance
+import com.legendsayantan.eminentinfo.data.Birthday
+import com.legendsayantan.eminentinfo.data.DaySlots
+import com.legendsayantan.eminentinfo.data.PeriodSlot
+import com.legendsayantan.eminentinfo.data.SubjectAttendance
+import com.legendsayantan.eminentinfo.data.TimeTable
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.beautifyCase
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.extractIntegers
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.getDayIndex
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.timeAsUnix
 import org.jsoup.Connection
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.io.IOException
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Locale
+import java.util.HashMap
 
 /**
  * @author legendsayantan
@@ -142,7 +141,7 @@ class Scrapers(val activity: Activity) {
                                     )
 
                                 } else PeriodSlot(
-                                    slots.last().startTime + PeriodSlot.duration,
+                                    slots.last().startTime + PeriodSlot.defaultDuration,
                                     "Break",
                                     ""
                                 )
@@ -153,8 +152,9 @@ class Scrapers(val activity: Activity) {
                     val dayIndex = days?.get(index)?.let { getDayIndex(it.text()) }
                     timeTable.daySlots[dayIndex!!] = DaySlots(slots)
                 }
-                callback(timeTable)
+                callback(TimeTable.optimiseTable(timeTable))
             } catch (e: IOException) {
+                callback(null)
                 e.printStackTrace()
             }
         }.start()
@@ -170,7 +170,7 @@ class Scrapers(val activity: Activity) {
                 .execute()
             val doc = response.parse()
             val subjectSelector = doc.getElementById("advance_search_subject_id")
-            val accountAttendance = AccountAttendance(arrayListOf(),System.currentTimeMillis())
+            val accountAttendance = AccountAttendance(arrayListOf(), System.currentTimeMillis())
             subjectSelector?.children()?.forEach { option ->
                 val c = Calendar.getInstance()
                 c.add(Calendar.MONTH, 1)
@@ -261,7 +261,8 @@ class Scrapers(val activity: Activity) {
                     list.add(
                         Birthday(
                             it.getElementsByClass("subcontent-header")[0].text().beautifyCase(),
-                            it.getElementsByClass("subcontent-info")[0].text().replace("Batch :","").beautifyCase().trim(),
+                            it.getElementsByClass("subcontent-info")[0].text()
+                                .replace("Batch :", "").beautifyCase().trim(),
                             it.getElementsByTag("img")[0].attr("src")
                         )
                     )
@@ -269,6 +270,67 @@ class Scrapers(val activity: Activity) {
                 callback(list)
             } catch (e: IOException) {
                 e.printStackTrace()
+                callback(null)
+            }
+        }.start()
+    }
+
+    fun getNews(
+        account: Account,
+        callback: (HashMap<Long, String>?) -> Unit
+    ) {
+        val usedUrl = "${getBaseUrl(account.ID)}/data_palettes/update_palette"
+        Thread {
+            try {
+                val calendar = Calendar.getInstance()
+                calendar.set(Calendar.HOUR, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                val list = hashMapOf<Long, String>()
+                for (i in 0..6) {
+                    val formData = mapOf(
+                        "palette[cur_date]" to "${calendar.get(Calendar.YEAR)}-${
+                            calendar.get(
+                                Calendar.MONTH
+                            ) + 1
+                        }-${
+                            calendar.get(
+                                Calendar.DAY_OF_MONTH
+                            )
+                        }",
+                        "palette[palette_name]" to "news"
+                    )
+                    val response: Connection.Response = Jsoup.connect(usedUrl)
+                        .data(formData)
+                        .cookie("_fedena_session_", account.sessionKey)
+                        .referrer(getBaseUrl(account.ID) + "/data_palettes")
+                        .header("Origin", getBaseUrl(account.ID))
+                        .header("X-Csrf-Token", account.csrfToken)
+                        .method(Connection.Method.POST)
+                        .execute()
+                    val doc = response.parse()
+                    doc.getElementsByClass("portlet-subcontent").forEach {
+                        if( it.getElementsByTag("a").size > 0){
+                            val loadNotice =
+                                getBaseUrl(account.ID) + it.getElementsByTag("a")[0]?.attr("href")
+                            val notice = Jsoup.connect(loadNotice)
+                                .cookie("_fedena_session_", account.sessionKey)
+                                .referrer(getBaseUrl(account.ID) + "/data_palettes")
+                                .header("Origin", getBaseUrl(account.ID))
+                                .method(Connection.Method.GET)
+                                .execute()
+                            list[calendar.timeInMillis] = notice.parse().getElementById("attachments_list")
+                                ?.getElementsByTag("a")
+                                ?.get(0)
+                                ?.attr("href")?:""
+                            calendar.add(Calendar.MINUTE, 1)
+                        }
+                    }
+                    calendar.add(Calendar.DAY_OF_YEAR, -1)
+                }
+                callback(list)
+            } catch (e: IOException) {
+                e.printStackTrace()
+                callback(null)
             }
         }.start()
     }

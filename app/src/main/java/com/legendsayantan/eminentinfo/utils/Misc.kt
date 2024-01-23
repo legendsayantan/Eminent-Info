@@ -1,10 +1,13 @@
-package com.legendsayantan.eminentalerts.utils
+package com.legendsayantan.eminentinfo.utils
 
+import android.content.Context
+import android.content.Intent
 import android.graphics.Color
-import com.legendsayantan.eminentalerts.data.PeriodSlot
+import android.net.Uri
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
 /**
@@ -32,18 +35,16 @@ class Misc {
         }
 
         fun timeAsUnix(timeString: String): Long {
-            val pattern = "hh:mm a"
-            val sdf = SimpleDateFormat(pattern)
-
-            try {
+            val sdf = SimpleDateFormat("hh:mm a")
+            return try {
                 // Parse the time string
                 val date = sdf.parse(timeString)
                 // Convert the Date object to Unix time (milliseconds since January 1, 1970)
-                return date?.time ?: -1L
+                date?.time ?: -1L
             } catch (e: Exception) {
                 // Handle parsing errors
                 e.printStackTrace()
-                return -1L
+                -1L
             }
         }
         fun shortMonth(monthNumber: Int): String {
@@ -51,33 +52,30 @@ class Misc {
             return monthAbbreviations[monthNumber - 1]
         }
 
-        fun relativeTime(t: Long,now:Long): String {
-            var time = t
-            val c = Calendar.getInstance()
-            c.timeInMillis = abs(now - time)
-            return if (time < now) {
-                time += PeriodSlot.duration
-                if (time > now) {
-                    if((now-t)>(PeriodSlot.duration/2)) {
-                        c.timeInMillis = abs(now - time)
-                        c.get(Calendar.MINUTE).toString()+" more minutes"
-                    }else{
-                        "Started "+c.get(Calendar.MINUTE).toString()+" min ago"
-                    }
-                }
-                else {
-                    (   "Finished "+
-                        if (c.get(Calendar.HOUR_OF_DAY) > 0) c.get(Calendar.HOUR_OF_DAY).toString() + "h "
-                        else ""
-                    ) + c.get(Calendar.MINUTE).toString() + "min ago"
-                }
-            }else{
-                "In " + (
-                    if (c.get(Calendar.HOUR_OF_DAY) > 0) c.get(Calendar.HOUR_OF_DAY).toString() + "h "
-                    else ""
-                ).toString() + c.get(Calendar.MINUTE).toString() + "min"
+        fun relativeTime(startTime: Long, currentTime:Long, duration: Long): String {
+            val elapsedTime = currentTime - startTime
+            val remainingTime = startTime + duration - currentTime
+
+            val absoluteElapsedTime = abs(elapsedTime)
+            val absoluteRemainingTime = abs(remainingTime)
+
+            val isEventInProgress = elapsedTime in 0..< duration
+            val isEventEndingSoon = absoluteRemainingTime <= duration/3
+            val isEventCompleted = elapsedTime >= duration
+
+
+            return when {
+                isEventInProgress -> "Started ${formatTime(absoluteElapsedTime)} ago"
+                isEventCompleted -> "Ended ${formatTime(absoluteRemainingTime)} ago"
+                isEventEndingSoon -> "Ends in ${formatTime(absoluteRemainingTime)}"
+                else -> "Starts in ${formatTime(absoluteElapsedTime)}"
             }
-            return ""
+        }
+        fun formatTime(timeInMillis: Long): String {
+            val hours = TimeUnit.MILLISECONDS.toHours(timeInMillis)
+            val minutes = TimeUnit.MILLISECONDS.toMinutes(timeInMillis) % 60
+
+            return "${if (hours > 0) "${hours}h " else ""}${minutes}m"
         }
 
         fun generateColor(value: Float): Int {
@@ -100,6 +98,23 @@ class Misc {
                 part.lowercase()
                     .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
             }
+        }
+        fun millisecondsSinceMidnight(): Long {
+            val calendar = Calendar.getInstance()
+            val now = System.currentTimeMillis()
+
+            calendar.timeInMillis = now
+            calendar.set(Calendar.HOUR_OF_DAY, 0)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
+
+            return now - calendar.timeInMillis
+        }
+
+        fun Context.launchUrlInBrowser(url: String) {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            startActivity(intent)
         }
     }
 }

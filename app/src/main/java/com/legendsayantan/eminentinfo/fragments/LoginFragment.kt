@@ -1,4 +1,4 @@
-package com.legendsayantan.eminentalerts.fragments
+package com.legendsayantan.eminentinfo.fragments
 
 import android.content.Context
 import android.os.Bundle
@@ -6,17 +6,15 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.core.view.children
 import androidx.fragment.app.FragmentActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textview.MaterialTextView
-import com.legendsayantan.eminentalerts.MainActivity
-import com.legendsayantan.eminentalerts.R
-import com.legendsayantan.eminentalerts.data.Account
-import com.legendsayantan.eminentalerts.utils.Scrapers
+import com.legendsayantan.eminentinfo.MainActivity
+import com.legendsayantan.eminentinfo.R
+import com.legendsayantan.eminentinfo.utils.Scrapers
 import java.util.Timer
 import kotlin.concurrent.timerTask
 

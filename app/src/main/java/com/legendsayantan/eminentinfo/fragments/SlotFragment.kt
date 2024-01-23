@@ -1,4 +1,4 @@
-package com.legendsayantan.eminentalerts.fragments
+package com.legendsayantan.eminentinfo.fragments
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -7,7 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.legendsayantan.eminentalerts.R
+import com.legendsayantan.eminentinfo.R
 
 private const val ARG_SUB = "subject"
 private const val ARG_HOST = "name"

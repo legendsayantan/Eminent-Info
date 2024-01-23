@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.legendsayantan.eminentalerts'
+    namespace 'com.legendsayantan.eminentinfo'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.legendsayantan.eminentalerts"
+        applicationId "com.legendsayantan.eminentinfo"
         minSdk 24
         targetSdk 34
         versionCode 1
@@ -51,4 +51,5 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.10.1'
 
     implementation 'com.github.bumptech.glide:glide:4.16.0'
+    implementation ("com.github.afreakyelf:Pdf-Viewer:v2.0.5")
 }

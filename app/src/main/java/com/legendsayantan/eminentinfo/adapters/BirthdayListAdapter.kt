@@ -1,4 +1,4 @@
-package com.legendsayantan.eminentalerts.adapters
+package com.legendsayantan.eminentinfo.adapters
 
 import android.content.Context
 import android.view.LayoutInflater
@@ -9,8 +9,8 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade
-import com.legendsayantan.eminentalerts.R
-import com.legendsayantan.eminentalerts.data.Birthday
+import com.legendsayantan.eminentinfo.R
+import com.legendsayantan.eminentinfo.data.Birthday
 
 /**
  * @author legendsayantan

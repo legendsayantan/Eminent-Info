@@ -1,4 +1,4 @@
-package com.legendsayantan.eminentalerts.data
+package com.legendsayantan.eminentinfo.data
 
 /**
  * @author legendsayantan

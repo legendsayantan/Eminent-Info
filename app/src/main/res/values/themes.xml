@@ -3,8 +3,13 @@
     <style name="Base.Theme.EminentAlerts" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
-        <item name="android:textColor">@color/blue</item>
+        <item name="android:textColor">@color/white</item>
     </style>
-
+    <style name="Theme.PdfView.SelectedTheme" parent="@style/Theme.PdfView.Light">
+        <item name="pdfView_showToolbar">true</item>
+        <item name="pdfView_disableScreenshots">false</item>
+        <item name="pdfView_actionBarTint">@color/mid</item>
+        <item name="android:statusBarColor">@color/green</item>
+    </style>
     <style name="Theme.EminentAlerts" parent="Base.Theme.EminentAlerts"/>
 </resources>

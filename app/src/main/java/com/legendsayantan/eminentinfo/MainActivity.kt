@@ -1,11 +1,11 @@
-package com.legendsayantan.eminentalerts
+package com.legendsayantan.eminentinfo
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.WindowManager
-import com.legendsayantan.eminentalerts.fragments.HomeFragment
-import com.legendsayantan.eminentalerts.fragments.LoginFragment
-import com.legendsayantan.eminentalerts.utils.AppStorage
+import com.legendsayantan.eminentinfo.fragments.HomeFragment
+import com.legendsayantan.eminentinfo.fragments.LoginFragment
+import com.legendsayantan.eminentinfo.utils.AppStorage
 
 class MainActivity : AppCompatActivity() {
     val appStorage by lazy { AppStorage(this) }

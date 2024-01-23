@@ -1,4 +1,4 @@
-package com.legendsayantan.eminentalerts.adapters
+package com.legendsayantan.eminentinfo.adapters
 
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
