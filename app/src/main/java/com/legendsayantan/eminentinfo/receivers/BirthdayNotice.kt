@@ -28,7 +28,7 @@ class BirthdayNotice : BroadcastReceiver() {
                         ) { birthdays ->
                             if (!birthdays.isNullOrEmpty()) {
                                 val filtered = birthdays.filter {
-                                    it.batch.contains(acc.batch) && it.batch.contains(acc.course)
+                                    it.batch.contains(acc.batch.trim(),true) && it.batch.contains(acc.course.trim(),true)
                                 }
                                 if (filtered.isNotEmpty()) {
                                     context.sendNotification(

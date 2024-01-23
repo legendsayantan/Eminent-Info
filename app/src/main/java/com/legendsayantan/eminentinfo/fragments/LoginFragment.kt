@@ -97,9 +97,9 @@ class LoginFragment : Fragment() {
                 activity().appStorage.saveAccount(account)
                 callback(account.name,true)
                 scraper.getMoreInfo(account){
-                    it?.split("\n").let { part->
-                        account.course = part?.get(0) ?: ""
-                        account.batch = part?.get(1) ?: ""
+                    it?.split("\n,").let { part->
+                        account.course = part?.get(0)?.trim() ?: ""
+                        account.batch = part?.get(1)?.trim() ?: ""
                     }
                     activity().appStorage.saveAccount(account)
                 }
