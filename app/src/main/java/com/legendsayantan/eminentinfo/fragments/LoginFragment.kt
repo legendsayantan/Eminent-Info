@@ -14,6 +14,7 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textview.MaterialTextView
 import com.legendsayantan.eminentinfo.MainActivity
 import com.legendsayantan.eminentinfo.R
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.launchUrlInBrowser
 import com.legendsayantan.eminentinfo.utils.Scrapers
 import java.util.Timer
 import kotlin.concurrent.timerTask
@@ -40,6 +41,7 @@ class LoginFragment : Fragment() {
         contextCache = requireContext()
         activityCache = requireActivity()
         val loginButton = view.findViewById<MaterialButton>(R.id.loginBtn)
+        val githubLink = view.findViewById<MaterialTextView>(R.id.githubLink)
         loginButton.setOnClickListener {
             loginButton.error = null
             attemptLogin{  name,success->
@@ -64,6 +66,9 @@ class LoginFragment : Fragment() {
                     loginButton.error = "Invalid Credentials"
                 }
             }
+        }
+        githubLink.setOnClickListener {
+            context.launchUrlInBrowser("https://github.com/legendsayantan")
         }
 
     }
