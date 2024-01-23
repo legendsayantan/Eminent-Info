@@ -594,7 +594,7 @@ class HomeFragment : Fragment() {
             totalHeight += listItem.measuredHeight
         }
         val params = listView.layoutParams
-        params.height = totalHeight + (15 * (listAdapter.count - 1))
+        params.height = totalHeight + (listView.dividerHeight * (listAdapter.count - 1))
         listView.layoutParams = params
         listView.requestLayout()
     }

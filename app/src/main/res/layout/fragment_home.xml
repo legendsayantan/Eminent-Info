@@ -185,6 +185,7 @@
                         android:id="@+id/birthdayList"
                         android:layout_marginHorizontal="10dp"
                         android:layout_marginBottom="5dp"
+                        android:divider="@color/transparent"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"/>
                 </LinearLayout>
@@ -306,7 +307,9 @@
                     </HorizontalScrollView>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="15dp"/>
         </LinearLayout>
     </ScrollView>
 </FrameLayout>
