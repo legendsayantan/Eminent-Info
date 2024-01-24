@@ -345,6 +345,7 @@ class HomeFragment : Fragment() {
         openBtn.rotation = if (collapsed) 90f else 0f
         openBtn.setOnClickListener {
             if (collapsed) {
+                if(loaderView.visibility==View.VISIBLE)return@setOnClickListener
                 loaderView.visibility = View.VISIBLE
                 scrapers.getBirthdays(acc, Calendar.getInstance()) {
                     activity().runOnUiThread {
@@ -374,6 +375,7 @@ class HomeFragment : Fragment() {
         openBtn.rotation = if (collapsed) 90f else 0f
         openBtn.setOnClickListener {
             if (collapsed) {
+                if(loaderView.visibility==View.VISIBLE)return@setOnClickListener
                 loaderView.visibility = View.VISIBLE
                 scrapers.getNews(acc) {
                     activity().runOnUiThread {
@@ -499,6 +501,7 @@ class HomeFragment : Fragment() {
         } catch (_: Exception) {
         }
         refreshBtn.setOnClickListener {
+            if(loaderView.visibility==View.VISIBLE)return@setOnClickListener
             refreshBtn.animate().rotation(360f).setDuration(1000).start()
             loaderView.visibility = View.VISIBLE
             scrapers.retrieveAttendance(acc) {
