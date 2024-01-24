@@ -10,6 +10,7 @@ import com.legendsayantan.eminentinfo.data.PeriodSlot
 import com.legendsayantan.eminentinfo.data.SubjectAttendance
 import com.legendsayantan.eminentinfo.data.TimeTable
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.beautifyCase
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.dateAsUnix
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.extractIntegers
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.getDayIndex
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.timeAsUnix
@@ -17,8 +18,9 @@ import org.jsoup.Connection
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.io.IOException
+import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.HashMap
+import kotlin.collections.HashMap
 
 /**
  * @author legendsayantan
@@ -109,7 +111,7 @@ class Scrapers(val context: Context) {
                 val doc = response.parse()
                 val days = doc.getElementById("table-days")?.getElementsByTag("tr")
                 val table = doc.getElementById("table")
-                var timeTable = TimeTable(Array(7) { _ -> DaySlots(arrayListOf()) })
+                var timeTable = TimeTable(Array(7) { _ -> DaySlots(arrayListOf()) }, hashMapOf())
 
                 table?.getElementsByTag("tr")?.forEachIndexed { index, tr ->
                     val slots = arrayListOf<PeriodSlot>()
@@ -151,11 +153,51 @@ class Scrapers(val context: Context) {
                     val dayIndex = days?.get(index)?.let { getDayIndex(it.text()) }
                     timeTable.daySlots[dayIndex!!] = DaySlots(slots)
                 }
-                callback(TimeTable.optimiseTable(timeTable))
+                retrieveHolidays(account) {
+                    timeTable.holidays = it
+                    callback(TimeTable.optimiseTable(timeTable))
+                }
             } catch (e: IOException) {
                 callback(null)
                 e.printStackTrace()
             }
+        }.start()
+    }
+
+    fun retrieveHolidays(acc: Account, callback: (HashMap<Long,String>) -> Unit){
+        val calendar = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY,0)
+            set(Calendar.MINUTE,0)
+        }
+        val holidays = hashMapOf<Long,String>()
+        Thread{
+            for (i in 0..14) {
+                val usedUrl = "${getBaseUrl(acc.ID)}/calendar/show_holiday_event_tooltip/${SimpleDateFormat("yyyy-MM-dd").format(calendar.timeInMillis)}"
+                try {
+                    val response: Connection.Response = Jsoup.connect(usedUrl)
+                        .header("Origin", getBaseUrl(acc.ID))
+                        .method(Connection.Method.GET)
+                        .cookie("_fedena_session_", acc.sessionKey)
+                        .execute()
+
+                    val html = response.body().split("\")")[0]
+                        .replace("Element.update(\"tooltip_header\", \"", "")
+                        .replace("\\n", "")
+                        .replace("\\", "")
+
+                    if(html.isNotEmpty()){
+                        val element = Element("div")
+                        element.html(html)
+
+                        holidays[calendar.timeInMillis] = element.getElementsByClass("desc")[0].text().beautifyCase()
+                    }
+
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+                calendar.add(Calendar.DAY_OF_YEAR,1)
+            }
+            callback(holidays)
         }.start()
     }
 
@@ -169,13 +211,17 @@ class Scrapers(val context: Context) {
                 .execute()
             val doc = response.parse()
             val subjectSelector = doc.getElementById("advance_search_subject_id")
-            val accountAttendance = AccountAttendance(arrayListOf(), System.currentTimeMillis())
+            val accountAttendance = AccountAttendance(
+                arrayListOf(),
+                hashMapOf(),
+                System.currentTimeMillis()
+            )
             subjectSelector?.children()?.forEach { option ->
                 val c = Calendar.getInstance()
                 c.add(Calendar.MONTH, 1)
                 val subAttendance = SubjectAttendance(option.text().beautifyCase(), hashMapOf())
                 for (i in 0..6) {
-                    var formData = mapOf<String, String?>()
+                    var formData: Map<String, String?>
                     if (i == 0) {
                         formData = mapOf(
                             "authenticity_token" to extractAuthToken(doc.html()),
@@ -215,6 +261,22 @@ class Scrapers(val context: Context) {
                     val layout = Element("div")
                     layout.html(html)
 
+                    if (option.text().contains("all", true) && i == 0) {
+                        val table =
+                            layout.getElementById("leave_reports")?.getElementById("listing")
+                        val absences = table?.getElementsByTag("tr")?.let { it.subList(2, it.size) }
+                        absences?.forEachIndexed { index, element ->
+                            val date = dateAsUnix(
+                                element.getElementsByClass("col-3")[0].text().trim()
+                            ) + index
+                            val subject = element.getElementsByClass("col-3")[2].text()
+                            if (accountAttendance.absence.keys.find {
+                                    SimpleDateFormat("DD").format(it) == SimpleDateFormat("DD").format(date) &&
+                                            accountAttendance.absence[it] == subject
+                                } == null)
+                                accountAttendance.absence[date] = subject
+                        }
+                    }
                     val attended =
                         layout.getElementsByClass("col-20").last()?.text()?.replace("%", "")
                             ?.toFloatOrNull()
@@ -275,7 +337,7 @@ class Scrapers(val context: Context) {
     }
 
     fun getNews(
-        account: Account, pastDays : Int = 9,
+        account: Account, pastDays: Int = 7,
         callback: (HashMap<Long, String>?) -> Unit
     ) {
         val usedUrl = "${getBaseUrl(account.ID)}/data_palettes/update_palette"

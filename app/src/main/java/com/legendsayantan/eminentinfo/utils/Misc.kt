@@ -57,8 +57,21 @@ class Misc {
                 -1L
             }
         }
+        fun dateAsUnix(dateString: String): Long {
+            val sdf = SimpleDateFormat("dd/MM/yyyy")
+            return try {
+                // Parse the time string
+                val date = sdf.parse(dateString)
+                // Convert the Date object to Unix time (milliseconds since January 1, 1970)
+                date?.time ?: -1L
+            } catch (e: Exception) {
+                // Handle parsing errors
+                e.printStackTrace()
+                -1L
+            }
+        }
         fun shortMonth(monthNumber: Int): String {
-            val monthAbbreviations = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+            val monthAbbreviations = arrayOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
             return monthAbbreviations[monthNumber - 1]
         }
 

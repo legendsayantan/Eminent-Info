@@ -141,7 +141,7 @@ class HomeFragment : Fragment() {
         val adapter = ArrayAdapter(
             context,
             android.R.layout.simple_list_item_1,
-            storage.getAllAccounts().filter { it!=acc }.map { it.name })
+            storage.getAllAccounts().filter { it != acc }.map { it.name })
         list.adapter = adapter
         val addNew = MaterialButton(context)
         addNew.backgroundTintList = ColorStateList.valueOf(resources.getColor(R.color.mid, null))
@@ -203,7 +203,7 @@ class HomeFragment : Fragment() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun initialiseTimeTable(acc: Account, collapsed: Boolean = true) {
-        val refershBtn = requireView().findViewById<ImageView>(R.id.timetableRefresh)
+        val refreshBtn = requireView().findViewById<ImageView>(R.id.timetableRefresh)
         val collapseBtn = requireView().findViewById<ImageView>(R.id.timetableCollapse)
         val container = requireView().findViewById<LinearLayout>(R.id.timetableContainer)
         val heading = requireView().findViewById<TextView>(R.id.timetableHeading)
@@ -217,6 +217,7 @@ class HomeFragment : Fragment() {
                 val adapter = ViewPagerAdapter(activity())
                 var todaySlots =
                     table.daySlots[Calendar.getInstance().get(Calendar.DAY_OF_WEEK) - 1]
+                var dayOfYear = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
                 val now = Calendar.getInstance()
                     .apply {
                         set(Calendar.DATE, 1);
@@ -226,7 +227,16 @@ class HomeFragment : Fragment() {
                 if ((todaySlots.periods.last().let { it.startTime + (it.duration * 2) }) < now) {
                     todaySlots =
                         table.daySlots[Calendar.getInstance().get(Calendar.DAY_OF_WEEK) % 7]
+                    dayOfYear = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR,1) }.get(Calendar.DAY_OF_YEAR)
                     heading.text = "Tomorrow :"
+                }
+                val hD = table.holidays.keys.find { Calendar.getInstance().apply { timeInMillis = it }.get(Calendar.DAY_OF_YEAR) ==dayOfYear }
+                if(hD!=null) {
+                    val textView = TextView(context)
+                    textView.text = "Holiday : ${table.holidays[hD]}"
+                    textView.setPadding(0, 0, 0, 10)
+                    textView.gravity = Gravity.CENTER
+                    container.addView(textView)
                 }
                 val timeSlot =
                     todaySlots.periods.indexOfFirst { abs(now - it.startTime) < it.duration }
@@ -309,8 +319,8 @@ class HomeFragment : Fragment() {
             container.setPadding(10, 10, 10, 10)
         } catch (_: Exception) {
         }
-        refershBtn.setOnClickListener {
-            refershBtn.animate().rotation(360f).setDuration(1000).start()
+        refreshBtn.setOnClickListener {
+            refreshBtn.animate().rotation(360f).setDuration(1000).start()
             scrapers.retrieveTimetable(acc) {
                 activity().runOnUiThread {
                     if (it != null) {
@@ -369,7 +379,7 @@ class HomeFragment : Fragment() {
                     activity().runOnUiThread {
                         if (!it.isNullOrEmpty()) {
                             val tableData = it.entries.sortedByDescending { it.key }
-                                .groupBy { SimpleDateFormat("DD/MM/YYYY").format(it.key) }
+                                .groupBy { SimpleDateFormat("EEE, DD MMM").format(it.key) }
                             tableData.forEach { map ->
                                 val row = TableRow(context)
                                 val date = TextView(context)
@@ -435,12 +445,14 @@ class HomeFragment : Fragment() {
     private fun initialiseAttendance(acc: Account) {
         val refreshBtn = requireView().findViewById<ImageView>(R.id.attendanceRefresh)
         val attendanceTable = requireView().findViewById<TableLayout>(R.id.attendanceTable)
+        val loaderView = requireView().findViewById<TextView>(R.id.loadingAttendance)
+        loaderView.visibility = View.GONE
         attendanceTable.removeAllViews()
         try {
             val headingRow = TableRow(context)
             headingRow.addView(TextView(context).apply {
                 text = "Last updated ${
-                    SimpleDateFormat("DD/MM HH:mm").format(
+                    SimpleDateFormat("DD MMM HH:mm").format(
                         Calendar.getInstance()
                             .apply { timeInMillis = storage.getAttendance(acc.ID).lastUpdated }.time
                     )
@@ -455,7 +467,7 @@ class HomeFragment : Fragment() {
                 } else {
                     val heading = TextView(context)
                     heading.text =
-                        if (it.key == 0) "Overall" else shortMonth((it.key % 12) + 1) + " " + (it.key / 12) % 100
+                        if (it.key == 0) "Overall" else shortMonth((it.key % 12) + 1)
                     heading.setPadding(10, 10, 20, 10)
                     heading.gravity = Gravity.END
                     heading.textSize = 16f
@@ -488,6 +500,7 @@ class HomeFragment : Fragment() {
         }
         refreshBtn.setOnClickListener {
             refreshBtn.animate().rotation(360f).setDuration(1000).start()
+            loaderView.visibility = View.VISIBLE
             scrapers.retrieveAttendance(acc) {
                 activity().runOnUiThread {
                     if (it != null) {
@@ -496,8 +509,44 @@ class HomeFragment : Fragment() {
                     } else {
                         Toast.makeText(context, "Failed to reload.", Toast.LENGTH_SHORT).show()
                     }
+                    loaderView.visibility = View.GONE
                 }
             }
+        }
+        initialiseAbsence(acc)
+    }
+
+    private fun initialiseAbsence(acc: Account) {
+        val table = requireView().findViewById<TableLayout>(R.id.absenceTable)
+        table.removeAllViews()
+        val days =
+            storage.getAttendance(acc.ID).absence.entries.sortedByDescending { it.key }
+                .groupBy { SimpleDateFormat("EEE, DD MMM").format(it.key) }
+        days.forEach { day ->
+            val row = TableRow(context)
+            val date = TextView(context)
+            date.text = day.key
+            date.setPadding(25, 20, 25, 20)
+            date.textSize = 16f
+            date.setTextColor(resources.getColor(R.color.green, null))
+            row.addView(date)
+            day.value.forEachIndexed { index, mutableEntry ->
+                val news = TextView(context)
+                news.text =
+                    mutableEntry.value.split(" ").joinToString(""){ it.substring(0, 1) }
+                news.textSize = 16f
+                news.setTextColor(resources.getColor(R.color.white, null))
+                news.setPadding(15, 0, 15, 0)
+                news.layoutParams = TableRow.LayoutParams(
+                    TableRow.LayoutParams.WRAP_CONTENT,
+                    100
+                ).apply {
+                    marginStart = 10
+                    marginEnd = 20
+                }
+                row.addView(news)
+            }
+            table.addView(row)
         }
     }
 

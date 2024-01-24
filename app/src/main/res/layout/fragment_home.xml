@@ -120,7 +120,7 @@
                             android:scaleY="0.8"
                             android:scaleX="0.8"
                             android:layout_height="match_parent"
-                            android:paddingHorizontal="5dp"
+                            android:paddingHorizontal="10dp"
                             app:tint="@color/white" />
                         <ImageView
                             android:id="@+id/timetableCollapse"
@@ -247,6 +247,68 @@
                     </HorizontalScrollView>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                app:cardBackgroundColor="@color/material_dynamic_neutral10"
+                android:clipToPadding="true"
+                android:layout_marginHorizontal="15dp"
+                android:layout_marginVertical="7dp"
+                android:animateLayoutChanges="true"
+                app:cardCornerRadius="25dp"
+                android:layout_height="wrap_content">
+                <LinearLayout
+                    android:layout_margin="5dp"
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:id="@+id/absenceHeading"
+                            android:text="Absence Records :"
+                            android:layout_weight="1"
+                            android:textSize="16dp"
+                            android:layout_marginStart="15dp"
+                            android:layout_marginTop="7dp"
+                            android:layout_marginBottom="5dp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+                        <TextView
+                            android:id="@+id/loadingAttendance"
+                            android:text="loading..."
+                            android:alpha="0.5"
+                            android:gravity="center_vertical"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"/>
+                        <ImageView
+                            android:id="@+id/attendanceRefresh"
+                            android:translationY="2dp"
+                            android:src="@drawable/baseline_refresh_24"
+                            android:layout_width="wrap_content"
+                            android:scaleY="0.8"
+                            android:scaleX="0.8"
+                            android:layout_height="match_parent"
+                            android:paddingHorizontal="15dp"
+                            app:tint="@color/white" />
+                    </LinearLayout>
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <TableLayout
+                            android:id="@+id/absenceTable"
+                            android:layout_marginBottom="5dp"
+                            android:layout_marginHorizontal="10dp"
+                            android:divider="@color/mid"
+                            android:animateLayoutChanges="true"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent">
+
+                        </TableLayout>
+                    </HorizontalScrollView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
@@ -267,7 +329,7 @@
                         android:layout_height="wrap_content">
                         <TextView
                             android:id="@+id/attendanceHeading"
-                            android:text="Attendance :"
+                            android:text="Attendance History :"
                             android:layout_weight="1"
                             android:textSize="16dp"
                             android:layout_marginStart="15dp"
@@ -275,27 +337,16 @@
                             android:layout_marginBottom="5dp"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
-                        <ImageView
-                            android:id="@+id/attendanceRefresh"
-                            android:translationY="2dp"
-                            android:src="@drawable/baseline_refresh_24"
-                            android:layout_width="wrap_content"
-                            android:scaleY="0.8"
-                            android:scaleX="0.8"
-                            android:layout_height="match_parent"
-                            android:paddingHorizontal="15dp"
-                            app:tint="@color/white" />
                     </LinearLayout>
                     <HorizontalScrollView
                         android:animateLayoutChanges="true"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
                         <LinearLayout
-                            android:id="@+id/attendanceContainer"
                             android:layout_marginBottom="12dp"
                             android:layout_marginHorizontal="12dp"
                             android:animateLayoutChanges="true"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:orientation="vertical" >
 
@@ -309,6 +360,7 @@
                                 </TableLayout>
                         </LinearLayout>
                     </HorizontalScrollView>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
             <Space
