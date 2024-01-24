@@ -29,7 +29,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:animateLayoutChanges="true"
                     app:cardCornerRadius="25dp"
-                    app:cardBackgroundColor="@color/material_dynamic_neutral10"
+                    app:cardBackgroundColor="@color/dark_grey"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content">
                     <LinearLayout
@@ -86,7 +86,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:animationCache="true"
-                app:cardBackgroundColor="@color/material_dynamic_neutral10"
+                app:cardBackgroundColor="@color/dark_grey"
                 android:clipToPadding="true"
                 android:clipChildren="true"
                 android:layout_marginHorizontal="15dp"
@@ -107,11 +107,11 @@
                             android:id="@+id/timetableHeading"
                             android:text="Today :"
                             android:layout_weight="1"
-                            android:textSize="16dp"
+                            android:textSize="16sp"
                             android:layout_marginStart="15dp"
                             android:layout_marginTop="7dp"
                             android:layout_marginBottom="5dp"
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"/>
                         <ImageView
                             android:id="@+id/timetableRefresh"
@@ -144,7 +144,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:clipToPadding="true"
-                app:cardBackgroundColor="@color/material_dynamic_neutral10"
+                app:cardBackgroundColor="@color/dark_grey"
                 android:layout_marginHorizontal="15dp"
                 android:layout_marginVertical="7dp"
                 android:animateLayoutChanges="true"
@@ -161,11 +161,11 @@
                         <TextView
                             android:text="Birthdays :"
                             android:layout_weight="1"
-                            android:textSize="16dp"
+                            android:textSize="16sp"
                             android:layout_marginStart="15dp"
                             android:layout_marginTop="7dp"
                             android:layout_marginBottom="5dp"
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"/>
                         <TextView
                             android:id="@+id/loadingBirthday"
@@ -194,7 +194,7 @@
             </com.google.android.material.card.MaterialCardView>
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                app:cardBackgroundColor="@color/material_dynamic_neutral10"
+                app:cardBackgroundColor="@color/dark_grey"
                 android:clipToPadding="true"
                 android:layout_marginHorizontal="15dp"
                 android:layout_marginVertical="7dp"
@@ -212,11 +212,11 @@
                         <TextView
                             android:text="Notice :"
                             android:layout_weight="1"
-                            android:textSize="16dp"
+                            android:textSize="16sp"
                             android:layout_marginStart="15dp"
                             android:layout_marginTop="7dp"
                             android:layout_marginBottom="5dp"
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"/>
                         <TextView
                             android:id="@+id/loadingNotice"
@@ -242,14 +242,14 @@
                             android:id="@+id/noticeTable"
                             android:layout_marginHorizontal="10dp"
                             android:layout_marginBottom="5dp"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
                     </HorizontalScrollView>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                app:cardBackgroundColor="@color/material_dynamic_neutral10"
+                app:cardBackgroundColor="@color/dark_grey"
                 android:clipToPadding="true"
                 android:layout_marginHorizontal="15dp"
                 android:layout_marginVertical="7dp"
@@ -268,11 +268,11 @@
                             android:id="@+id/absenceHeading"
                             android:text="Absence Records :"
                             android:layout_weight="1"
-                            android:textSize="16dp"
+                            android:textSize="16sp"
                             android:layout_marginStart="15dp"
                             android:layout_marginTop="7dp"
                             android:layout_marginBottom="5dp"
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"/>
                         <TextView
                             android:id="@+id/loadingAttendance"
@@ -302,7 +302,7 @@
                             android:layout_marginHorizontal="10dp"
                             android:divider="@color/mid"
                             android:animateLayoutChanges="true"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="match_parent">
 
                         </TableLayout>
@@ -312,7 +312,7 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                app:cardBackgroundColor="@color/material_dynamic_neutral10"
+                app:cardBackgroundColor="@color/dark_grey"
                 android:clipToPadding="true"
                 android:layout_marginHorizontal="15dp"
                 android:layout_marginVertical="7dp"
@@ -331,11 +331,11 @@
                             android:id="@+id/attendanceHeading"
                             android:text="Attendance History :"
                             android:layout_weight="1"
-                            android:textSize="16dp"
+                            android:textSize="16sp"
                             android:layout_marginStart="15dp"
                             android:layout_marginTop="7dp"
                             android:layout_marginBottom="5dp"
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"/>
                     </LinearLayout>
                     <HorizontalScrollView

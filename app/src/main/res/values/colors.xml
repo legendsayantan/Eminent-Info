@@ -10,4 +10,7 @@
     <color name="grey">
         #808080
     </color>
+    <color name="dark_grey">
+        #191C1E
+    </color>
 </resources>
