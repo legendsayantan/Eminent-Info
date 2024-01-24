@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             //copy to clipboard
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clip = android.content.ClipData.newPlainText("Error", e.toString())
+            val clip = android.content.ClipData.newPlainText("Error", e.cause.toString()+"\n"+e.stackTraceToString())
             clipboard.setPrimaryClip(clip)
             Toast.makeText(this,"Error copied to clipboard",Toast.LENGTH_LONG).show()
             //restart app

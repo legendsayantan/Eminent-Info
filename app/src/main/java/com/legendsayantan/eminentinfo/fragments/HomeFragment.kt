@@ -568,7 +568,6 @@ class HomeFragment : Fragment() {
         if (notifications.any { it }) {
             image.setImageResource(R.drawable.baseline_notifications_24)
             activity().requestIgnoreBatteryOptimizations()
-            registerAlarmManager(notifications)
         } else {
             image.setImageResource(R.drawable.baseline_notifications_none_24)
         }
@@ -610,6 +609,7 @@ class HomeFragment : Fragment() {
             } catch (_: Exception) {
             }
             val saveSettings = CompoundButton.OnCheckedChangeListener { _, _ ->
+                if(birthdaySwitch.isChecked||noticeSwitch.isChecked) registerAlarmManager(notifications)
                 storage.saveNotificationSettings(
                     acc.ID,
                     arrayOf(
@@ -668,11 +668,7 @@ class HomeFragment : Fragment() {
         if (notifications[1] || notifications[2]) {
             val intent = Intent(activity(), BirthdayNotice::class.java)
             val pendingIntent =
-                PendingIntent.getBroadcast(activity(), 0, intent, PendingIntent.FLAG_MUTABLE)
-            try {
-                alarmManager.cancel(pendingIntent)
-            } catch (_: Exception) {
-            }
+                PendingIntent.getBroadcast(activity(), 0, intent, PendingIntent.FLAG_IMMUTABLE)
             alarmManager.setRepeating(
                 AlarmManager.RTC_WAKEUP,
                 Calendar.getInstance().apply {

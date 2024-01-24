@@ -36,7 +36,7 @@ class BirthdayNotice : BroadcastReceiver() {
                                     context.sendNotification(
                                         "Birthdays on ${SimpleDateFormat("DD MMM YYYY").format(c.time)} :",
                                         filtered.joinToString("\n") { it.name },
-                                        abs(("${acc.batch.hashCode()}0").toInt())
+                                        ("${abs(acc.batch.hashCode()/10)}0").toInt()
                                     )
                                 }
                             }
@@ -50,7 +50,7 @@ class BirthdayNotice : BroadcastReceiver() {
                                     context.sendNotification(
                                         "Eminent published a Notice today",
                                         "Click to open",
-                                        abs(("${notice.value.hashCode()}1").toInt()),
+                                        ("${abs(notice.value.hashCode()/10)}1").toInt(),
                                         PdfViewerActivity.launchPdfFromUrl(
                                             context,
                                             notice.value,
