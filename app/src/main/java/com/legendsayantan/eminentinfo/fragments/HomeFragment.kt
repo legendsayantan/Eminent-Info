@@ -141,7 +141,7 @@ class HomeFragment : Fragment() {
         val adapter = ArrayAdapter(
             context,
             android.R.layout.simple_list_item_1,
-            storage.getAllAccounts().filter { it != acc }.map { it.name })
+            storage.getAllAccounts().filter { it.ID != acc.ID }.map { it.name })
         list.adapter = adapter
         val addNew = MaterialButton(context)
         addNew.backgroundTintList = ColorStateList.valueOf(resources.getColor(R.color.mid, null))
@@ -178,7 +178,7 @@ class HomeFragment : Fragment() {
         val dialog = MaterialAlertDialogBuilder(context).setView(cardView).create()
         dialog.show()
         list.setOnItemClickListener { _, _, position, _ ->
-            storage.setActiveAccount(storage.getAllAccounts().filter { it != acc }[position])
+            storage.setActiveAccount(storage.getAllAccounts().filter { it.ID != acc.ID }[position])
             activity().reloadUI()
             dialog.dismiss()
         }

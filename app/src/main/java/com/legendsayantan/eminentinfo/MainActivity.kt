@@ -1,8 +1,11 @@
 package com.legendsayantan.eminentinfo
 
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.legendsayantan.eminentinfo.fragments.HomeFragment
 import com.legendsayantan.eminentinfo.fragments.LoginFragment
@@ -17,6 +20,16 @@ class MainActivity : AppCompatActivity() {
         //if appstorage has no accounts, inflate login fragment
         //else inflate home fragment
         reloadUI()
+
+        Thread.setDefaultUncaughtExceptionHandler { t, e ->
+            //copy to clipboard
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = android.content.ClipData.newPlainText("Error", e.toString())
+            clipboard.setPrimaryClip(clip)
+            Toast.makeText(this,"Error copied to clipboard",Toast.LENGTH_LONG).show()
+            //restart app
+            android.os.Process.killProcess(android.os.Process.myPid())
+        }
     }
     fun reloadUI(){
         supportFragmentManager.beginTransaction().replace(R.id.container, Fragment()).commit()
