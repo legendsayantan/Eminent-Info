@@ -609,7 +609,7 @@ class HomeFragment : Fragment() {
             } catch (_: Exception) {
             }
             val saveSettings = CompoundButton.OnCheckedChangeListener { _, _ ->
-                if(birthdaySwitch.isChecked||noticeSwitch.isChecked) registerAlarmManager(notifications)
+                registerAlarmManager(notifications)
                 storage.saveNotificationSettings(
                     acc.ID,
                     arrayOf(
@@ -665,10 +665,10 @@ class HomeFragment : Fragment() {
         if (notifications[0]) {
 
         }
+        val intent = Intent(activity(), BirthdayNotice::class.java)
+        val pendingIntent =
+            PendingIntent.getBroadcast(activity(), 0, intent, PendingIntent.FLAG_IMMUTABLE)
         if (notifications[1] || notifications[2]) {
-            val intent = Intent(activity(), BirthdayNotice::class.java)
-            val pendingIntent =
-                PendingIntent.getBroadcast(activity(), 0, intent, PendingIntent.FLAG_IMMUTABLE)
             alarmManager.setRepeating(
                 AlarmManager.RTC_WAKEUP,
                 Calendar.getInstance().apply {
@@ -678,7 +678,7 @@ class HomeFragment : Fragment() {
                 1000 * 60 * 60 * 24,
                 pendingIntent
             )
-        }
+        }else alarmManager.cancel(pendingIntent)
     }
 
     companion object {
