@@ -10,6 +10,7 @@ import com.rajat.pdfviewer.PdfViewerActivity
 import com.rajat.pdfviewer.util.saveTo
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import kotlin.math.abs
 
 class BirthdayNotice : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -17,6 +18,7 @@ class BirthdayNotice : BroadcastReceiver() {
             val appStorage = AppStorage(context)
             appStorage.getAllAccounts().forEach { acc ->
                 appStorage.getNotificationSettings(acc.ID).let { settings ->
+                    if(settings.isEmpty())return@forEach
                     if (settings[1]) {
                         //check birthday
                         val c = Calendar.getInstance().apply {
@@ -34,7 +36,7 @@ class BirthdayNotice : BroadcastReceiver() {
                                     context.sendNotification(
                                         "Birthdays on ${SimpleDateFormat("DD MMM YYYY").format(c.time)} :",
                                         filtered.joinToString("\n") { it.name },
-                                        1
+                                        abs(("${acc.batch.hashCode()}0").toInt())
                                     )
                                 }
                             }
@@ -46,9 +48,9 @@ class BirthdayNotice : BroadcastReceiver() {
                             if (!notices.isNullOrEmpty()) {
                                 notices.forEach { notice ->
                                     context.sendNotification(
-                                        "Notice from Eminent",
+                                        "Eminent published a Notice today",
                                         "Click to open",
-                                        2,
+                                        abs(("${notice.value.hashCode()}1").toInt()),
                                         PdfViewerActivity.launchPdfFromUrl(
                                             context,
                                             notice.value,
