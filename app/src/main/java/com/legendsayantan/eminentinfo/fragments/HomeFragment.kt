@@ -326,6 +326,13 @@ class HomeFragment : Fragment() {
                     if (it != null) {
                         storage.saveTimeTable(acc.ID, it)
                         initialiseTimeTable(acc, collapsed)
+                        scrapers.getMoreInfo(acc){
+                            it?.split("\n,").let { part->
+                                acc.course = part?.get(0)?.trim() ?: ""
+                                acc.batch = part?.get(1)?.trim() ?: ""
+                            }
+                            activity().appStorage.saveAccount(acc)
+                        }
                     } else {
                         Toast.makeText(context, "Failed to reload.", Toast.LENGTH_SHORT).show()
                     }

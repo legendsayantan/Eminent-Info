@@ -164,15 +164,17 @@ class Scrapers(val context: Context) {
         }.start()
     }
 
-    fun retrieveHolidays(acc: Account, callback: (HashMap<Long,String>) -> Unit){
+    fun retrieveHolidays(acc: Account, callback: (HashMap<Long, String>) -> Unit) {
         val calendar = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY,0)
-            set(Calendar.MINUTE,0)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
         }
-        val holidays = hashMapOf<Long,String>()
-        Thread{
+        val holidays = hashMapOf<Long, String>()
+        Thread {
             for (i in 0..14) {
-                val usedUrl = "${getBaseUrl(acc.ID)}/calendar/show_holiday_event_tooltip/${SimpleDateFormat("yyyy-MM-dd").format(calendar.timeInMillis)}"
+                val usedUrl = "${getBaseUrl(acc.ID)}/calendar/show_holiday_event_tooltip/${
+                    SimpleDateFormat("yyyy-MM-dd").format(calendar.timeInMillis)
+                }"
                 try {
                     val response: Connection.Response = Jsoup.connect(usedUrl)
                         .header("Origin", getBaseUrl(acc.ID))
@@ -185,17 +187,18 @@ class Scrapers(val context: Context) {
                         .replace("\\n", "")
                         .replace("\\", "")
 
-                    if(html.isNotEmpty()){
+                    if (html.isNotEmpty()) {
                         val element = Element("div")
                         element.html(html)
 
-                        holidays[calendar.timeInMillis] = element.getElementsByClass("desc")[0].text().beautifyCase()
+                        holidays[calendar.timeInMillis] =
+                            element.getElementsByClass("desc")[0].text().beautifyCase()
                     }
 
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
-                calendar.add(Calendar.DAY_OF_YEAR,1)
+                calendar.add(Calendar.DAY_OF_YEAR, 1)
             }
             callback(holidays)
         }.start()
@@ -271,7 +274,9 @@ class Scrapers(val context: Context) {
                             ) + index
                             val subject = element.getElementsByClass("col-3")[2].text()
                             if (accountAttendance.absence.keys.find {
-                                    SimpleDateFormat("DD").format(it) == SimpleDateFormat("DD").format(date) &&
+                                    SimpleDateFormat("DD").format(it) == SimpleDateFormat("DD").format(
+                                        date
+                                    ) &&
                                             accountAttendance.absence[it] == subject
                                 } == null)
                                 accountAttendance.absence[date] = subject
@@ -323,7 +328,10 @@ class Scrapers(val context: Context) {
                         Birthday(
                             it.getElementsByClass("subcontent-header")[0].text().beautifyCase(),
                             it.getElementsByClass("subcontent-info")[0].text()
-                                .replace("Batch :", "").beautifyCase().trim(),
+                                .replace("Batch :", "")
+                                .replace("Semester", "Sem")
+                                .replace(" - "," · ")
+                                .trim(),
                             it.getElementsByTag("img")[0].attr("src")
                         )
                     )
@@ -441,9 +449,5 @@ class Scrapers(val context: Context) {
             Regex("""<input\s+name="authenticity_token"\s+type="hidden"\s+value="([^"]+)"""")
         val matchResult = regex.find(htmlContent)
         return matchResult?.groupValues?.get(1)
-    }
-
-    companion object {
-
     }
 }
