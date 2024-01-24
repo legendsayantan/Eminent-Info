@@ -178,7 +178,7 @@ class HomeFragment : Fragment() {
         val dialog = MaterialAlertDialogBuilder(context).setView(cardView).create()
         dialog.show()
         list.setOnItemClickListener { _, _, position, _ ->
-            storage.setActiveAccount(storage.getAllAccounts()[position])
+            storage.setActiveAccount(storage.getAllAccounts().filter { it != acc }[position])
             activity().reloadUI()
             dialog.dismiss()
         }
@@ -529,35 +529,37 @@ class HomeFragment : Fragment() {
     private fun initialiseAbsence(acc: Account) {
         val table = requireView().findViewById<TableLayout>(R.id.absenceTable)
         table.removeAllViews()
-        val days =
-            storage.getAttendance(acc.ID).absence.entries.sortedByDescending { it.key }
-                .groupBy { SimpleDateFormat("EEE, DD MMM").format(it.key) }
-        days.forEach { day ->
-            val row = TableRow(context)
-            val date = TextView(context)
-            date.text = day.key
-            date.setPadding(25, 20, 25, 20)
-            date.textSize = 16f
-            date.setTextColor(resources.getColor(R.color.green, null))
-            row.addView(date)
-            day.value.forEachIndexed { index, mutableEntry ->
-                val news = TextView(context)
-                news.text =
-                    mutableEntry.value.split(" ").joinToString(""){ it.substring(0, 1) }
-                news.textSize = 16f
-                news.setTextColor(resources.getColor(R.color.white, null))
-                news.setPadding(15, 0, 15, 0)
-                news.layoutParams = TableRow.LayoutParams(
-                    TableRow.LayoutParams.WRAP_CONTENT,
-                    100
-                ).apply {
-                    marginStart = 10
-                    marginEnd = 20
+        try {
+            val days =
+                storage.getAttendance(acc.ID).absence.entries.sortedByDescending { it.key }
+                    .groupBy { SimpleDateFormat("EEE, DD MMM").format(it.key) }
+            days.forEach { day ->
+                val row = TableRow(context)
+                val date = TextView(context)
+                date.text = day.key
+                date.setPadding(25, 20, 25, 20)
+                date.textSize = 16f
+                date.setTextColor(resources.getColor(R.color.green, null))
+                row.addView(date)
+                day.value.forEachIndexed { index, mutableEntry ->
+                    val news = TextView(context)
+                    news.text =
+                        mutableEntry.value.split(" ").joinToString(""){ it.substring(0, 1) }
+                    news.textSize = 16f
+                    news.setTextColor(resources.getColor(R.color.white, null))
+                    news.setPadding(15, 0, 15, 0)
+                    news.layoutParams = TableRow.LayoutParams(
+                        TableRow.LayoutParams.WRAP_CONTENT,
+                        100
+                    ).apply {
+                        marginStart = 10
+                        marginEnd = 20
+                    }
+                    row.addView(news)
                 }
-                row.addView(news)
+                table.addView(row)
             }
-            table.addView(row)
-        }
+        }catch (_:Exception){}
     }
 
     private fun initialiseNotifications(acc: Account) {

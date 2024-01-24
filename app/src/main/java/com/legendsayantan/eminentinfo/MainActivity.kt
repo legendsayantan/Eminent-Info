@@ -3,6 +3,7 @@ package com.legendsayantan.eminentinfo
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.WindowManager
+import androidx.fragment.app.Fragment
 import com.legendsayantan.eminentinfo.fragments.HomeFragment
 import com.legendsayantan.eminentinfo.fragments.LoginFragment
 import com.legendsayantan.eminentinfo.utils.AppStorage
@@ -18,6 +19,7 @@ class MainActivity : AppCompatActivity() {
         reloadUI()
     }
     fun reloadUI(){
+        supportFragmentManager.beginTransaction().replace(R.id.container, Fragment()).commit()
         supportFragmentManager.beginTransaction().replace(
             R.id.container, if (appStorage.getAllAccounts().isEmpty()) {
                 LoginFragment()

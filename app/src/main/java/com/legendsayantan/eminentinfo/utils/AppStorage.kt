@@ -18,7 +18,7 @@ class AppStorage(context: Context) {
 
     fun getAllAccounts():List<Account>{
         val accounts = mutableListOf<Account>()
-        this.accounts.all.forEach {
+        this.accounts.all.filter { it.key!="active" }.forEach {
             accounts.add(Gson().fromJson(it.value.toString(),Account::class.java))
         }
         return accounts

@@ -69,7 +69,9 @@ class Scrapers(val context: Context) {
                     .header("X-Csrf-Token", csrfToken)
                     .method(Connection.Method.POST)
                     .execute()
-                val accessor = accessorResponse.parse().getElementsByTag("a").first()?.attr("href")
+                val accessElement = accessorResponse.parse().getElementsByTag("a")
+                    .find { it.attr("href").contains("/student/") }
+                val accessor = accessElement?.attr("href")
                     ?.extractIntegers()
                     ?.get(0)
                     ?: 0
@@ -330,7 +332,7 @@ class Scrapers(val context: Context) {
                             it.getElementsByClass("subcontent-info")[0].text()
                                 .replace("Batch :", "")
                                 .replace("Semester", "Sem")
-                                .replace(" - "," · ")
+                                .replace(" - ", " · ")
                                 .trim(),
                             it.getElementsByTag("img")[0].attr("src")
                         )
