@@ -2,6 +2,7 @@ package com.legendsayantan.eminentinfo.utils
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -165,6 +166,7 @@ class Misc {
                     NotificationManager.IMPORTANCE_DEFAULT
                 )
                 channel.description = "Eminent Info"
+                channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
                 notificationManager.createNotificationChannel(channel)
             }
             val notification = NotificationCompat.Builder(this, "$packageName.info")
@@ -172,6 +174,7 @@ class Misc {
                 .setContentText(message)
                 .setSmallIcon(com.legendsayantan.eminentinfo.R.drawable.collegelogo)
                 .setAutoCancel(true)
+                .setSilent(true)
             if(intent!=null){
                 val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
                 notification.setContentIntent(pendingIntent)

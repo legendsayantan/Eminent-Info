@@ -38,6 +38,7 @@ import com.legendsayantan.eminentinfo.adapters.BirthdayListAdapter
 import com.legendsayantan.eminentinfo.adapters.ViewPagerAdapter
 import com.legendsayantan.eminentinfo.data.Account
 import com.legendsayantan.eminentinfo.receivers.BirthdayNotice
+import com.legendsayantan.eminentinfo.receivers.PhaseReceiver
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.beautifyCase
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.generateColor
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.relativeTime
@@ -238,14 +239,14 @@ class HomeFragment : Fragment() {
                     textView.gravity = Gravity.CENTER
                     container.addView(textView)
                 }
-                val timeSlot =
+                val slotIndex =
                     todaySlots.periods.indexOfFirst { abs(now - it.startTime) < it.duration }
                 todaySlots.periods.forEachIndexed { index, periodSlot ->
                     adapter.addFragment(
                         SlotFragment.newInstance(
                             periodSlot.subject,
                             periodSlot.host,
-                            if (timeSlot >= 0 && (abs(timeSlot - index) <= 1)) {
+                            if (slotIndex >= 0 && (abs(slotIndex - index) <= 1)) {
                                 relativeTime(periodSlot.startTime, now, periodSlot.duration)
                             } else {
                                 val c = Calendar.getInstance()
@@ -262,8 +263,8 @@ class HomeFragment : Fragment() {
                 container.addView(viewPager)
                 viewPager.isUserInputEnabled = true
                 viewPager.adapter = adapter
-                if (timeSlot > 0) Timer().schedule(timerTask {
-                    activity().runOnUiThread { viewPager.setCurrentItem(timeSlot, true) }
+                if (slotIndex > 0) Timer().schedule(timerTask {
+                    activity().runOnUiThread { viewPager.setCurrentItem(slotIndex, true) }
                 }, 500)
             } else {
                 val viewPagers = List(7) { i -> ViewPager2(context) }
@@ -609,15 +610,13 @@ class HomeFragment : Fragment() {
             } catch (_: Exception) {
             }
             val saveSettings = CompoundButton.OnCheckedChangeListener { _, _ ->
-                registerAlarmManager(notifications)
-                storage.saveNotificationSettings(
-                    acc.ID,
-                    arrayOf(
-                        timeTableSwitch.isChecked,
-                        birthdaySwitch.isChecked,
-                        noticeSwitch.isChecked
-                    )
+                notifications = arrayOf(
+                    timeTableSwitch.isChecked,
+                    birthdaySwitch.isChecked,
+                    noticeSwitch.isChecked
                 )
+                storage.saveNotificationSettings(acc.ID, notifications)
+                registerAlarmManager(acc.ID,notifications)
             }
             timeTableSwitch.setOnCheckedChangeListener(saveSettings)
             birthdaySwitch.setOnCheckedChangeListener(saveSettings)
@@ -660,14 +659,18 @@ class HomeFragment : Fragment() {
         listView.requestLayout()
     }
 
-    private fun registerAlarmManager(notifications: Array<Boolean>) {
+    private fun registerAlarmManager(accID:String, notifications: Array<Boolean>) {
         val alarmManager = activity().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val periodIntent = PendingIntent.getBroadcast(activity(), 0, Intent(activity(), PhaseReceiver::class.java), PendingIntent.FLAG_IMMUTABLE)
         if (notifications[0]) {
-
-        }
-        val intent = Intent(activity(), BirthdayNotice::class.java)
+            val time = if(storage.getTimeTable(accID).daySlots.isEmpty()) Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY,10) }.timeInMillis
+                else storage.getTimeTable(accID).daySlots[Calendar.getInstance().get(Calendar.DAY_OF_WEEK) - 1].periods[0].startTime
+            alarmManager.set(AlarmManager.RTC_WAKEUP,
+                time,
+                periodIntent)
+        }else alarmManager.cancel(periodIntent)
         val pendingIntent =
-            PendingIntent.getBroadcast(activity(), 0, intent, PendingIntent.FLAG_IMMUTABLE)
+            PendingIntent.getBroadcast(activity(), 0, Intent(activity(), BirthdayNotice::class.java), PendingIntent.FLAG_IMMUTABLE)
         if (notifications[1] || notifications[2]) {
             alarmManager.setRepeating(
                 AlarmManager.RTC_WAKEUP,
