@@ -89,9 +89,9 @@ class Misc {
 
 
             return when {
-                isEventInProgress -> "Started ${formatTime(absoluteElapsedTime)} ago"
                 isEventCompleted -> "Ended ${formatTime(absoluteRemainingTime)} ago"
                 isEventEndingSoon -> "Ends in ${formatTime(absoluteRemainingTime)}"
+                isEventInProgress -> "Started ${formatTime(absoluteElapsedTime)} ago"
                 else -> "Starts in ${formatTime(absoluteElapsedTime)}"
             }
         }
@@ -157,7 +157,7 @@ class Misc {
         }
 
         @SuppressLint("MissingPermission")
-        fun Context.sendNotification(title: String, message: String, id: Int, intent: Intent? = null) {
+        fun Context.sendNotification(title: String, message: String, id: Int,timeout:Long=0, intent: Intent? = null) {
             val notificationManager = getSystemService(NotificationManager::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val channel = NotificationChannel(
@@ -178,6 +178,9 @@ class Misc {
             if(intent!=null){
                 val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
                 notification.setContentIntent(pendingIntent)
+            }
+            if(timeout>0){
+                notification.setTimeoutAfter(timeout)
             }
             notificationManager.notify(id, notification.build())
         }

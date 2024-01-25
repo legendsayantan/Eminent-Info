@@ -49,12 +49,13 @@ class PhaseReceiver : BroadcastReceiver() {
             todaySlots.periods[slotIndex].let { now ->
                 if (now.subject.split("(")[0].isNotEmpty()) {
                     context.sendNotification(
-                        "Now : ${now.subject.split("(")[0]} ${now.host.let { if(it.isNotEmpty()) "($it)" else "" }}",
+                        "Now : ${now.subject.split("(")[0].trim()} ${now.host.let { if(it.isNotEmpty()) "- $it" else "" }}",
                         nextSlot?.let {
                             "Next at " + SimpleDateFormat("hh:mm").format(it.startTime) + " : " +
-                                    it.subject.split("(")[0] + "(" + nextSlot.host + ")"
+                                    it.subject.split("(")[0].trim() + " - " + nextSlot.host
                         } ?: "Next : None",
-                        "${abs(todaySlots.hashCode() / 10)}2".toInt()
+                        "${abs(todaySlots.hashCode() / 10)}2".toInt(),
+                        timeout = now.duration
                     )
                 }
             }

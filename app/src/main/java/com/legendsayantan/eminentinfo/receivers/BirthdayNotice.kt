@@ -51,7 +51,7 @@ class BirthdayNotice : BroadcastReceiver() {
                                         "Eminent published a Notice today",
                                         "Click to open",
                                         ("${abs(notice.value.hashCode()/10)}1").toInt(),
-                                        PdfViewerActivity.launchPdfFromUrl(
+                                        intent = PdfViewerActivity.launchPdfFromUrl(
                                             context,
                                             notice.value,
                                             "Notice - ${SimpleDateFormat("DD/MM/YYYY").format(notice.key)}",
