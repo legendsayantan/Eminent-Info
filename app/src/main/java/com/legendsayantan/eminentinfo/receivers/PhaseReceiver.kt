@@ -6,7 +6,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.legendsayantan.eminentinfo.utils.AppStorage
-import com.legendsayantan.eminentinfo.utils.Misc.Companion.relativeTime
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.sendNotification
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -25,11 +24,7 @@ class PhaseReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_IMMUTABLE
         )
         if (today == 0) {
-            alarmManager.set(
-                AlarmManager.RTC_WAKEUP,
-                Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis,
-                periodIntent
-            )
+            teminateAndReschecule(alarmManager,periodIntent)
             return
         }
         storage.getAllAccounts().forEach { acc ->
@@ -44,16 +39,23 @@ class PhaseReceiver : BroadcastReceiver() {
                 }.timeInMillis
             val slotIndex =
                 todaySlots.periods.indexOfFirst { abs(millisToday - it.startTime) < it.duration }
+            if(slotIndex<0) {
+                teminateAndReschecule(alarmManager, periodIntent)
+                return
+            }
             val nextSlot =
                 if (slotIndex < todaySlots.periods.size - 1) todaySlots.periods[slotIndex + 1] else null
             todaySlots.periods[slotIndex].let { now ->
                 if (now.subject.split("(")[0].isNotEmpty()) {
+                    val sdf = SimpleDateFormat("hh:mm")
                     context.sendNotification(
-                        "Now : ${now.subject.split("(")[0].trim()} ${now.host.let { if(it.isNotEmpty()) "- $it" else "" }}",
+                        "Now : ${now.subject.split("(")[0].trim()} ${now.host.let { if (it.isNotEmpty()) "- $it" else "" }}",
                         nextSlot?.let {
-                            "Next at " + SimpleDateFormat("hh:mm").format(it.startTime) + " : " +
+                            "Next at " +
+                                    sdf.format(it.startTime) +
+                                    " : " +
                                     it.subject.split("(")[0].trim() + " - " + nextSlot.host
-                        } ?: "Next : None",
+                        } ?: ("Ends at " + sdf.format(now.startTime + now.duration)),
                         "${abs(todaySlots.hashCode() / 10)}2".toInt(),
                         timeout = now.duration
                     )
@@ -62,15 +64,15 @@ class PhaseReceiver : BroadcastReceiver() {
 
 
             //re-schedule
+            val past = Calendar.getInstance().apply {
+                timeInMillis = nextSlot?.startTime
+                    ?: storage.getTimeTable(acc.ID).daySlots[(today + 1) % 7].periods[0].startTime
+            }
             val unixtime = Calendar.getInstance().apply {
-                val past = Calendar.getInstance().apply {
-                    timeInMillis = nextSlot?.startTime
-                        ?: storage.getTimeTable(acc.ID).daySlots[(today + 1) % 7].periods[0].startTime
-                }
                 set(Calendar.HOUR_OF_DAY, past.get(Calendar.HOUR_OF_DAY))
                 set(Calendar.MINUTE, past.get(Calendar.MINUTE))
                 set(Calendar.SECOND, 0)
-                add(Calendar.DAY_OF_YEAR, 1)
+                if (nextSlot == null) add(Calendar.DAY_OF_YEAR, 1)
             }.timeInMillis
             alarmManager.set(
                 AlarmManager.RTC_WAKEUP,
@@ -78,5 +80,12 @@ class PhaseReceiver : BroadcastReceiver() {
                 periodIntent
             )
         }
+    }
+    fun teminateAndReschecule(alarmManager: AlarmManager, periodIntent: PendingIntent){
+        alarmManager.set(
+            AlarmManager.RTC_WAKEUP,
+            Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis,
+            periodIntent
+        )
     }
 }

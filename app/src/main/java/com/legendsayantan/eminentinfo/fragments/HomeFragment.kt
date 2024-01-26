@@ -675,7 +675,7 @@ class HomeFragment : Fragment() {
             alarmManager.setRepeating(
                 AlarmManager.RTC_WAKEUP,
                 Calendar.getInstance().apply {
-                    set(Calendar.HOUR_OF_DAY, 23)
+                    set(Calendar.HOUR_OF_DAY, 18)
                     set(Calendar.MINUTE, 0)
                 }.timeInMillis,
                 1000 * 60 * 60 * 24,
