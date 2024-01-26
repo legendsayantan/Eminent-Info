@@ -38,7 +38,7 @@ class BirthdayNotice : BroadcastReceiver() {
                                 }
                                 if (filtered.isNotEmpty()) {
                                     context.sendNotification(
-                                        "Birthdays on ${SimpleDateFormat("DD MMM YYYY").format(c.time)} :",
+                                        "Birthdays tomorrow :",
                                         filtered.joinToString("\n") { it.name },
                                         ("${abs((acc.batch + acc.course).hashCode() / 10)}0").toInt()
                                     )

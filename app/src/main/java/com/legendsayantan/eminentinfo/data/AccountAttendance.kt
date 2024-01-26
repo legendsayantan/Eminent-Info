@@ -5,7 +5,7 @@ package com.legendsayantan.eminentinfo.data
  */
 data class AccountAttendance(
     val subjects: ArrayList<SubjectAttendance>,
-    val absence: HashMap<Long, String>,
+    var absence: HashMap<Long, String>,
     val lastUpdated: Long
 ){
 }

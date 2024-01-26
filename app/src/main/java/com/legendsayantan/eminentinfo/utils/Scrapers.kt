@@ -11,9 +11,11 @@ import com.legendsayantan.eminentinfo.data.SubjectAttendance
 import com.legendsayantan.eminentinfo.data.TimeTable
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.beautifyCase
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.dateAsUnix
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.dateDifference
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.extractIntegers
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.getDayIndex
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.timeAsUnix
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.unParenthesis
 import org.jsoup.Connection
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
@@ -117,29 +119,31 @@ class Scrapers(val context: Context) {
 
                 table?.getElementsByTag("tr")?.forEachIndexed { index, tr ->
                     val slots = arrayListOf<PeriodSlot>()
-                    tr.getElementsByTag("td").forEach {
+                    tr.getElementsByTag("td").forEach { td ->
                         slots.add(
-                            it.getElementsByClass("class_timings").let { timing ->
+                            td.getElementsByClass("class_timings").let { timing ->
                                 if (timing.size > 0) {
+                                    val temp = td.getElementsByClass("class_timing_tooltip")[0]
                                     PeriodSlot(
                                         timeAsUnix(
                                             timing[0].text().split("-")[0].trim()
                                         ),
-                                        it.getElementsByClass("class_timing_tooltip")[0].getElementsByClass(
+                                        temp.getElementsByClass(
                                             "sub-line"
                                         )[0].text().trim().beautifyCase(),
-                                        it.getElementsByClass("employee")[0].text().trim()
-                                            .beautifyCase()
+                                        temp.getElementsByClass("emp-line").joinToString {
+                                            it.text().trim().unParenthesis().beautifyCase()
+                                        }
                                     )
-                                } else if (it.getElementsByClass("blank_timings").size > 0) {
+                                } else if (td.getElementsByClass("blank_timings").size > 0) {
                                     PeriodSlot(
                                         timeAsUnix(
-                                            it.getElementsByClass("blank_timings")[0].text()
+                                            td.getElementsByClass("blank_timings")[0].text()
                                                 .split("-")[0].trim()
                                         ),
-                                        it.getElementsByClass("subject1")[0].text().trim()
+                                        td.getElementsByClass("subject1")[0].text().trim()
                                             .beautifyCase(),
-                                        it.getElementsByClass("employee")[0].text().trim()
+                                        td.getElementsByClass("employee")[0].text().trim()
                                             .beautifyCase()
                                     )
 
@@ -206,8 +210,13 @@ class Scrapers(val context: Context) {
         }.start()
     }
 
-    fun retrieveAttendance(acc: Account, callback: (AccountAttendance?) -> Unit) {
+    fun retrieveAttendance(
+        acc: Account,
+        fullReport: Boolean = true,
+        callback: (AccountAttendance?) -> Unit
+    ) {
         val usedUrl = "${getBaseUrl(acc.ID)}/student_attendance/student/${acc.accessor}"
+        val sdf = SimpleDateFormat("DD")
         Thread {
             val response: Connection.Response = Jsoup.connect(usedUrl)
                 .header("Origin", getBaseUrl(acc.ID))
@@ -275,14 +284,14 @@ class Scrapers(val context: Context) {
                                 element.getElementsByClass("col-3")[0].text().trim()
                             ) + index
                             val subject = element.getElementsByClass("col-3")[2].text()
-                            if (accountAttendance.absence.keys.find {
-                                    SimpleDateFormat("DD").format(it) == SimpleDateFormat("DD").format(
-                                        date
-                                    ) &&
+                            if (dateDifference(System.currentTimeMillis(),date) < 7 &&
+                                accountAttendance.absence.keys.find {
+                                    dateDifference(it, date) == 0 &&
                                             accountAttendance.absence[it] == subject
-                                } == null)
-                                accountAttendance.absence[date] = subject
+                                } == null
+                            ) accountAttendance.absence[date] = subject
                         }
+                        if (!fullReport) return@forEach
                     }
                     val attended =
                         layout.getElementsByClass("col-20").last()?.text()?.replace("%", "")
@@ -294,7 +303,6 @@ class Scrapers(val context: Context) {
                 accountAttendance.subjects.add(subAttendance)
             }
             callback(accountAttendance)
-
         }.start()
 
     }

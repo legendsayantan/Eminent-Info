@@ -37,8 +37,9 @@ import com.legendsayantan.eminentinfo.R
 import com.legendsayantan.eminentinfo.adapters.BirthdayListAdapter
 import com.legendsayantan.eminentinfo.adapters.ViewPagerAdapter
 import com.legendsayantan.eminentinfo.data.Account
+import com.legendsayantan.eminentinfo.receivers.AbsenceReceiver
 import com.legendsayantan.eminentinfo.receivers.BirthdayNotice
-import com.legendsayantan.eminentinfo.receivers.PhaseReceiver
+import com.legendsayantan.eminentinfo.receivers.PhaseStarter
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.beautifyCase
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.generateColor
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.relativeTime
@@ -143,6 +144,7 @@ class HomeFragment : Fragment() {
             context,
             android.R.layout.simple_list_item_1,
             storage.getAllAccounts().filter { it.ID != acc.ID }.map { it.name })
+        list.divider = null
         list.adapter = adapter
         val addNew = MaterialButton(context)
         addNew.backgroundTintList = ColorStateList.valueOf(resources.getColor(R.color.mid, null))
@@ -228,11 +230,15 @@ class HomeFragment : Fragment() {
                 if ((todaySlots.periods.last().let { it.startTime + (it.duration * 2) }) < now) {
                     todaySlots =
                         table.daySlots[Calendar.getInstance().get(Calendar.DAY_OF_WEEK) % 7]
-                    dayOfYear = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR,1) }.get(Calendar.DAY_OF_YEAR)
+                    dayOfYear = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
+                        .get(Calendar.DAY_OF_YEAR)
                     heading.text = "Tomorrow :"
                 }
-                val hD = table.holidays.keys.find { Calendar.getInstance().apply { timeInMillis = it }.get(Calendar.DAY_OF_YEAR) ==dayOfYear }
-                if(hD!=null) {
+                val hD = table.holidays.keys.find {
+                    Calendar.getInstance().apply { timeInMillis = it }
+                        .get(Calendar.DAY_OF_YEAR) == dayOfYear
+                }
+                if (hD != null) {
                     val textView = TextView(context)
                     textView.text = "Holiday : ${table.holidays[hD]}"
                     textView.setPadding(0, 0, 0, 10)
@@ -327,8 +333,8 @@ class HomeFragment : Fragment() {
                     if (it != null) {
                         storage.saveTimeTable(acc.ID, it)
                         initialiseTimeTable(acc, collapsed)
-                        scrapers.getMoreInfo(acc){
-                            it?.split("\n,").let { part->
+                        scrapers.getMoreInfo(acc) {
+                            it?.split("\n,").let { part ->
                                 acc.course = part?.get(0)?.trim() ?: ""
                                 acc.batch = part?.get(1)?.trim() ?: ""
                             }
@@ -353,7 +359,7 @@ class HomeFragment : Fragment() {
         openBtn.rotation = if (collapsed) 90f else 0f
         openBtn.setOnClickListener {
             if (collapsed) {
-                if(loaderView.visibility==View.VISIBLE)return@setOnClickListener
+                if (loaderView.visibility == View.VISIBLE) return@setOnClickListener
                 loaderView.visibility = View.VISIBLE
                 scrapers.getBirthdays(acc, Calendar.getInstance()) {
                     activity().runOnUiThread {
@@ -383,7 +389,7 @@ class HomeFragment : Fragment() {
         openBtn.rotation = if (collapsed) 90f else 0f
         openBtn.setOnClickListener {
             if (collapsed) {
-                if(loaderView.visibility==View.VISIBLE)return@setOnClickListener
+                if (loaderView.visibility == View.VISIBLE) return@setOnClickListener
                 loaderView.visibility = View.VISIBLE
                 scrapers.getNews(acc) {
                     activity().runOnUiThread {
@@ -414,15 +420,14 @@ class HomeFragment : Fragment() {
                                         )
                                     )
                                     news.text = "Notice ${index + 1}"
-                                    news.textSize = 16f
+                                    news.textSize = 15f
                                     news.setTextColor(resources.getColor(R.color.white, null))
-                                    news.setPadding(15, 0, 15, 0)
                                     news.layoutParams = TableRow.LayoutParams(
                                         TableRow.LayoutParams.WRAP_CONTENT,
                                         100
                                     ).apply {
-                                        marginStart = 10
-                                        marginEnd = 20
+                                        marginStart = 5
+                                        marginEnd = 15
                                     }
                                     news.setOnClickListener {
                                         startActivity(
@@ -509,7 +514,7 @@ class HomeFragment : Fragment() {
         } catch (_: Exception) {
         }
         refreshBtn.setOnClickListener {
-            if(loaderView.visibility==View.VISIBLE)return@setOnClickListener
+            if (loaderView.visibility == View.VISIBLE) return@setOnClickListener
             refreshBtn.animate().rotation(360f).setDuration(1000).start()
             loaderView.visibility = View.VISIBLE
             scrapers.retrieveAttendance(acc) {
@@ -545,8 +550,8 @@ class HomeFragment : Fragment() {
                 day.value.forEachIndexed { index, mutableEntry ->
                     val news = TextView(context)
                     news.text =
-                        mutableEntry.value.split(" ").joinToString(""){ it.substring(0, 1) }
-                    news.textSize = 16f
+                        mutableEntry.value.split(" ").joinToString("") { it.substring(0, 1) }
+                    news.textSize = 15f
                     news.setTextColor(resources.getColor(R.color.white, null))
                     news.setPadding(15, 0, 15, 0)
                     news.layoutParams = TableRow.LayoutParams(
@@ -560,7 +565,8 @@ class HomeFragment : Fragment() {
                 }
                 table.addView(row)
             }
-        }catch (_:Exception){}
+        } catch (_: Exception) {
+        }
     }
 
     private fun initialiseNotifications(acc: Account) {
@@ -594,38 +600,40 @@ class HomeFragment : Fragment() {
             val container = LinearLayout(context)
             container.orientation = LinearLayout.VERTICAL
             val title = TextView(context)
+            title.text = "Notification Settings"
+            title.textSize = 18f
+            title.setPadding(0, 15, 0, 15)
+            container.addView(title)
+            val switchCount = 4
+            val switches = Array(switchCount) { MaterialSwitch(context) }
+            val texts = arrayOf(
+                "Ongoing periods",
+                "Birthdays of classmates",
+                "New Notices",
+                "Marked as absent"
+            )
+            val saveSettings = CompoundButton.OnCheckedChangeListener { _, _ ->
+                notifications = switches.map { it.isChecked }.toTypedArray()
+                storage.saveNotificationSettings(acc.ID, notifications)
+                registerAlarmManager(acc.ID)
+            }
             val timeTableSwitch = MaterialSwitch(context)
             val birthdaySwitch = MaterialSwitch(context)
             val noticeSwitch = MaterialSwitch(context)
-            title.text = "Notification Settings"
-            title.textSize = 18f
-            title.setPadding(0, 0, 0, 15)
+            val absenceSwitch = MaterialSwitch(context)
             timeTableSwitch.text = "Next Periods"
             birthdaySwitch.text = "Birthdays of classmates"
             noticeSwitch.text = "New Notices"
-            try {
-                timeTableSwitch.isChecked = notifications[0]
-                birthdaySwitch.isChecked = notifications[1]
-                noticeSwitch.isChecked = notifications[2]
-            } catch (_: Exception) {
+            absenceSwitch.text = "Marked as absent"
+            switches.forEachIndexed { index, materialSwitch ->
+                materialSwitch.text = texts[index]
+                try {
+                    materialSwitch.isChecked = notifications[index]
+                } catch (_: Exception) {
+                }
+                materialSwitch.setOnCheckedChangeListener(saveSettings)
+                container.addView(materialSwitch)
             }
-            val saveSettings = CompoundButton.OnCheckedChangeListener { _, _ ->
-                notifications = arrayOf(
-                    timeTableSwitch.isChecked,
-                    birthdaySwitch.isChecked,
-                    noticeSwitch.isChecked
-                )
-                storage.saveNotificationSettings(acc.ID, notifications)
-                registerAlarmManager(acc.ID,notifications)
-            }
-            timeTableSwitch.setOnCheckedChangeListener(saveSettings)
-            birthdaySwitch.setOnCheckedChangeListener(saveSettings)
-            noticeSwitch.setOnCheckedChangeListener(saveSettings)
-            container.addView(title)
-            container.addView(timeTableSwitch)
-            container.addView(birthdaySwitch)
-            container.addView(noticeSwitch)
-
             container.layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -659,18 +667,39 @@ class HomeFragment : Fragment() {
         listView.requestLayout()
     }
 
-    private fun registerAlarmManager(accID:String, notifications: Array<Boolean>) {
+    private fun registerAlarmManager(accID: String) {
+        val notis = storage.getAllAccounts().map { storage.getNotificationSettings(it.ID) }
+        val notifications = Array(4) { index -> notis.any { it.isNotEmpty() && it[index] } }
         val alarmManager = activity().getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val periodIntent = PendingIntent.getBroadcast(activity(), 0, Intent(activity(), PhaseReceiver::class.java), PendingIntent.FLAG_IMMUTABLE)
+        val enqueuePhaseIntent = PendingIntent.getBroadcast(
+            activity(),
+            0,
+            Intent(activity(), PhaseStarter::class.java),
+            PendingIntent.FLAG_IMMUTABLE
+        )
         if (notifications[0]) {
-            val time = if(storage.getTimeTable(accID).daySlots.isEmpty()) Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY,10) }.timeInMillis
-                else storage.getTimeTable(accID).daySlots[Calendar.getInstance().get(Calendar.DAY_OF_WEEK) - 1].periods[0].startTime
-            alarmManager.set(AlarmManager.RTC_WAKEUP,
-                time,
-                periodIntent)
-        }else alarmManager.cancel(periodIntent)
-        val pendingIntent =
-            PendingIntent.getBroadcast(activity(), 0, Intent(activity(), BirthdayNotice::class.java), PendingIntent.FLAG_IMMUTABLE)
+            val past = Calendar.getInstance().apply {
+                timeInMillis = storage.getTimeTable(accID).daySlots[Calendar.getInstance()
+                    .get(Calendar.DAY_OF_WEEK) - 1].periods[0].startTime
+            }
+            val unixtime = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, past.get(Calendar.HOUR_OF_DAY))
+                set(Calendar.MINUTE, past.get(Calendar.MINUTE))
+                set(Calendar.SECOND, 0)
+            }.timeInMillis
+            alarmManager.setRepeating(
+                AlarmManager.RTC_WAKEUP,
+                unixtime,
+                AlarmManager.INTERVAL_DAY,
+                enqueuePhaseIntent
+            )
+        } else alarmManager.cancel(enqueuePhaseIntent)
+        val pendingIntent = PendingIntent.getBroadcast(
+            activity(),
+            0,
+            Intent(activity(), BirthdayNotice::class.java),
+            PendingIntent.FLAG_IMMUTABLE
+        )
         if (notifications[1] || notifications[2]) {
             alarmManager.setRepeating(
                 AlarmManager.RTC_WAKEUP,
@@ -678,10 +707,27 @@ class HomeFragment : Fragment() {
                     set(Calendar.HOUR_OF_DAY, 18)
                     set(Calendar.MINUTE, 0)
                 }.timeInMillis,
-                1000 * 60 * 60 * 24,
+                AlarmManager.INTERVAL_DAY,
                 pendingIntent
             )
-        }else alarmManager.cancel(pendingIntent)
+        } else alarmManager.cancel(pendingIntent)
+        val absenceIntent = PendingIntent.getBroadcast(
+            activity(),
+            0,
+            Intent(activity(), AbsenceReceiver::class.java),
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        if (notifications[3]) {
+            alarmManager.setRepeating(
+                AlarmManager.RTC_WAKEUP,
+                Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 18)
+                    set(Calendar.MINUTE, 0)
+                }.timeInMillis,
+                AlarmManager.INTERVAL_DAY,
+                absenceIntent
+            )
+        } else alarmManager.cancel(absenceIntent)
     }
 
     companion object {

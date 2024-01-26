@@ -123,17 +123,18 @@ class Misc {
                     .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
             }
         }
-        fun millisecondsSinceMidnight(): Long {
-            val calendar = Calendar.getInstance()
-            val now = System.currentTimeMillis()
-
-            calendar.timeInMillis = now
-            calendar.set(Calendar.HOUR_OF_DAY, 0)
-            calendar.set(Calendar.MINUTE, 0)
-            calendar.set(Calendar.SECOND, 0)
-            calendar.set(Calendar.MILLISECOND, 0)
-
-            return now - calendar.timeInMillis
+        fun String.unParenthesis():String{
+            val regex = Regex("\\([^)]*\\)")
+            return replace(regex, "")
+        }
+        fun dateDifference(mainDate: Long, compareDate: Long): Int {
+            val c1 = Calendar.getInstance().apply {
+                timeInMillis = mainDate
+            }
+            val c2 = Calendar.getInstance().apply {
+                timeInMillis = compareDate
+            }
+            return c1.get(Calendar.DAY_OF_YEAR) - c2.get(Calendar.DAY_OF_YEAR)
         }
 
         fun Context.launchUrlInBrowser(url: String) {
@@ -184,5 +185,7 @@ class Misc {
             }
             notificationManager.notify(id, notification.build())
         }
+
+
     }
 }
