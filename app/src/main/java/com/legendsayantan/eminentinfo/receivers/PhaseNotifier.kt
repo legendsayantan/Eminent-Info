@@ -3,6 +3,9 @@ package com.legendsayantan.eminentinfo.receivers
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
+import com.legendsayantan.eminentinfo.data.PeriodSlot
+import com.legendsayantan.eminentinfo.data.TimeTable
 import com.legendsayantan.eminentinfo.receivers.PhaseStarter.Companion.setEnablePhaseNoti
 import com.legendsayantan.eminentinfo.utils.AppStorage
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.sendNotification
@@ -13,16 +16,44 @@ import kotlin.math.abs
 class PhaseNotifier : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val storage = AppStorage(context)
-        val batchesDone = arrayListOf<String>()
-        val today = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) - 1
-        if (today == 0) {
+        val activeSlotsCollection =
+            storage.getAllAccounts().filter { acc ->
+                storage.getNotificationSettings(acc.ID).let { it.isNotEmpty() && it[0] }
+            }.map {
+                PhaseNotifier.getActiveSlots(
+                    storage.getTimeTable(it.ID)
+                )
+            }
+        val currentSlotsCollection = activeSlotsCollection.filter { it.isNotEmpty() }.map { it[0] }
+        val nextSlotsCollection = activeSlotsCollection.filter { it.size>1 }.map { it[1] }
+        if(currentSlotsCollection.isNotEmpty()){
+            val now = currentSlotsCollection.sortedBy { it.startTime }[0]
+            val next = nextSlotsCollection.let { slot -> if(slot.isNotEmpty()) slot.sortedBy { it.startTime }[0] else null }
+            if (now.subject.split("(")[0].isNotEmpty()) {
+                val sdf = SimpleDateFormat("hh:mm")
+                context.sendNotification(
+                    "Now : ${now.subject.split("(")[0].trim()} ${now.host.let { if (it.isNotEmpty()) "- $it" else "" }}",
+                    next?.let {
+                        "Next at " +
+                                sdf.format(it.startTime) +
+                                " : " +
+                                it.subject.split("(")[0].trim() + " - " + next.host
+                    } ?: ("Ends at " + sdf.format(now.startTime + now.duration)),
+                    "${abs(now.subject.hashCode() / 10)}2".toInt(),
+                    timeout = now.duration
+                )
+            }
+        }else {
+            if(0 != context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE)
+                context.sendNotification("Debug Notification","no periods now",0)
             context.setEnablePhaseNoti(false)
-            return
         }
-        storage.getAllAccounts().forEach { acc ->
-            if (batchesDone.contains(acc.batch + acc.course)) return@forEach
-            else batchesDone.add(acc.batch + acc.course)
-            val todaySlots = storage.getTimeTable(acc.ID).daySlots[today]
+    }
+    companion object{
+        fun getActiveSlots(timeTable: TimeTable):ArrayList<PeriodSlot>{
+            val today = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) - 1
+            if(today==0) return arrayListOf()
+            val todaySlots = timeTable.daySlots[today]
             val millisToday = Calendar.getInstance()
                 .apply {
                     set(Calendar.DATE, 1);
@@ -31,29 +62,10 @@ class PhaseNotifier : BroadcastReceiver() {
                 }.timeInMillis
             val slotIndex =
                 todaySlots.periods.indexOfFirst { abs(millisToday - it.startTime) < it.duration }
-            if (slotIndex < 0) {
-                context.setEnablePhaseNoti(false)
-                return
-            }
-            val nextSlot =
-                if (slotIndex < todaySlots.periods.size - 1) todaySlots.periods[slotIndex + 1] else null
-            todaySlots.periods[slotIndex].let { now ->
-                if (now.subject.split("(")[0].isNotEmpty()) {
-                    val sdf = SimpleDateFormat("hh:mm")
-                    context.sendNotification(
-                        "Now : ${now.subject.split("(")[0].trim()} ${now.host.let { if (it.isNotEmpty()) "- $it" else "" }}",
-                        nextSlot?.let {
-                            "Next at " +
-                                    sdf.format(it.startTime) +
-                                    " : " +
-                                    it.subject.split("(")[0].trim() + " - " + nextSlot.host
-                        } ?: ("Ends at " + sdf.format(now.startTime + now.duration)),
-                        "${abs(todaySlots.hashCode() / 10)}2".toInt(),
-                        timeout = now.duration
-                    )
-                }
-            }
-
+            if (slotIndex < 0) return arrayListOf()
+            val list = arrayListOf(todaySlots.periods[slotIndex])
+            if (slotIndex < todaySlots.periods.size - 1) list.add(todaySlots.periods[slotIndex + 1])
+            return list
         }
     }
 }

@@ -216,93 +216,96 @@ class Scrapers(val context: Context) {
         callback: (AccountAttendance?) -> Unit
     ) {
         val usedUrl = "${getBaseUrl(acc.ID)}/student_attendance/student/${acc.accessor}"
-        val sdf = SimpleDateFormat("DD")
         Thread {
-            val response: Connection.Response = Jsoup.connect(usedUrl)
-                .header("Origin", getBaseUrl(acc.ID))
-                .method(Connection.Method.GET)
-                .cookie("_fedena_session_", acc.sessionKey)
-                .execute()
-            val doc = response.parse()
-            val subjectSelector = doc.getElementById("advance_search_subject_id")
-            val accountAttendance = AccountAttendance(
-                arrayListOf(),
-                hashMapOf(),
-                System.currentTimeMillis()
-            )
-            subjectSelector?.children()?.forEach { option ->
-                val c = Calendar.getInstance()
-                c.add(Calendar.MONTH, 1)
-                val subAttendance = SubjectAttendance(option.text().beautifyCase(), hashMapOf())
-                for (i in 0..6) {
-                    var formData: Map<String, String?>
-                    if (i == 0) {
-                        formData = mapOf(
-                            "authenticity_token" to extractAuthToken(doc.html()),
-                            "advance_search[subject_id]" to option.`val`(),
-                            "advance_search[mode]" to "Overall",
-                            "commit" to "► OK"
-                        )
-                    } else {
-                        c.add(Calendar.MONTH, -1)
-                        formData = mapOf(
-                            "authenticity_token" to extractAuthToken(doc.html()),
-                            "advance_search[subject_id]" to option.`val`(),
-                            "advance_search[mode]" to "Monthly",
-                            "advance_search[month]" to (c.get(Calendar.MONTH) + 1).toString(),
-                            "advance_search[year]" to c.get(Calendar.YEAR).toString(),
-                            "commit" to "► OK"
-                        )
-                    }
-
-                    // Submit the form with the provided data
-                    val formResponse: Connection.Response = Jsoup.connect(usedUrl)
-                        .data(formData)
-                        .header("X-Csrf-Token", acc.csrfToken)
-                        .method(Connection.Method.POST)
-                        .cookie(
-                            "_fedena_session_",
-                            acc.sessionKey
-                        )  // Use cookies from the previous response
-                        .execute()
-
-
-                    val html = formResponse.body().split("\")")[0]
-                        .replace("Element.update(\"report\", \"", "")
-                        .replace("\\n", "")
-                        .replace("\\", "")
-
-                    val layout = Element("div")
-                    layout.html(html)
-
-                    if (option.text().contains("all", true) && i == 0) {
-                        val table =
-                            layout.getElementById("leave_reports")?.getElementById("listing")
-                        val absences = table?.getElementsByTag("tr")?.let { it.subList(2, it.size) }
-                        absences?.forEachIndexed { index, element ->
-                            val date = dateAsUnix(
-                                element.getElementsByClass("col-3")[0].text().trim()
-                            ) + index
-                            val subject = element.getElementsByClass("col-3")[2].text()
-                            if (dateDifference(System.currentTimeMillis(),date) < 7 &&
-                                accountAttendance.absence.keys.find {
-                                    dateDifference(it, date) == 0 &&
-                                            accountAttendance.absence[it] == subject
-                                } == null
-                            ) accountAttendance.absence[date] = subject
+            try {
+                val response: Connection.Response = Jsoup.connect(usedUrl)
+                    .header("Origin", getBaseUrl(acc.ID))
+                    .method(Connection.Method.GET)
+                    .cookie("_fedena_session_", acc.sessionKey)
+                    .execute()
+                val doc = response.parse()
+                val subjectSelector = doc.getElementById("advance_search_subject_id")
+                val accountAttendance = AccountAttendance(
+                    arrayListOf(),
+                    hashMapOf(),
+                    System.currentTimeMillis()
+                )
+                subjectSelector?.children()?.forEach { option ->
+                    val c = Calendar.getInstance()
+                    c.add(Calendar.MONTH, 1)
+                    val subAttendance = SubjectAttendance(option.text().beautifyCase(), hashMapOf())
+                    for (i in 0..6) {
+                        var formData: Map<String, String?>
+                        if (i == 0) {
+                            formData = mapOf(
+                                "authenticity_token" to extractAuthToken(doc.html()),
+                                "advance_search[subject_id]" to option.`val`(),
+                                "advance_search[mode]" to "Overall",
+                                "commit" to "► OK"
+                            )
+                        } else {
+                            c.add(Calendar.MONTH, -1)
+                            formData = mapOf(
+                                "authenticity_token" to extractAuthToken(doc.html()),
+                                "advance_search[subject_id]" to option.`val`(),
+                                "advance_search[mode]" to "Monthly",
+                                "advance_search[month]" to (c.get(Calendar.MONTH) + 1).toString(),
+                                "advance_search[year]" to c.get(Calendar.YEAR).toString(),
+                                "commit" to "► OK"
+                            )
                         }
-                        if (!fullReport) return@forEach
+
+                        // Submit the form with the provided data
+                        val formResponse: Connection.Response = Jsoup.connect(usedUrl)
+                            .data(formData)
+                            .header("X-Csrf-Token", acc.csrfToken)
+                            .method(Connection.Method.POST)
+                            .cookie(
+                                "_fedena_session_",
+                                acc.sessionKey
+                            )  // Use cookies from the previous response
+                            .execute()
+
+
+                        val html = formResponse.body().split("\")")[0]
+                            .replace("Element.update(\"report\", \"", "")
+                            .replace("\\n", "")
+                            .replace("\\", "")
+
+                        val layout = Element("div")
+                        layout.html(html)
+
+                        if (option.text().contains("all", true) && i == 0) {
+                            val table =
+                                layout.getElementById("leave_reports")?.getElementById("listing")
+                            val absences = table?.getElementsByTag("tr")?.let { it.subList(2, it.size) }
+                            absences?.forEachIndexed { index, element ->
+                                val date = dateAsUnix(
+                                    element.getElementsByClass("col-3")[0].text().trim()
+                                ) + index
+                                val subject = element.getElementsByClass("col-3")[2].text()
+                                if (dateDifference(System.currentTimeMillis(),date) < 7 &&
+                                    accountAttendance.absence.keys.find {
+                                        dateDifference(it, date) == 0 &&
+                                                accountAttendance.absence[it] == subject
+                                    } == null
+                                ) accountAttendance.absence[date] = subject
+                            }
+                            if (!fullReport) return@forEach
+                        }
+                        val attended =
+                            layout.getElementsByClass("col-20").last()?.text()?.replace("%", "")
+                                ?.toFloatOrNull()
+                        subAttendance.attend[if (i == 0) 0 else (c.get(Calendar.YEAR) * 12 + c.get(
+                            Calendar.MONTH
+                        ))] = attended ?: 0f
                     }
-                    val attended =
-                        layout.getElementsByClass("col-20").last()?.text()?.replace("%", "")
-                            ?.toFloatOrNull()
-                    subAttendance.attend[if (i == 0) 0 else (c.get(Calendar.YEAR) * 12 + c.get(
-                        Calendar.MONTH
-                    ))] = attended ?: 0f
+                    accountAttendance.subjects.add(subAttendance)
                 }
-                accountAttendance.subjects.add(subAttendance)
+                callback(accountAttendance)
+            }catch (e:Exception){
+                callback(null)
             }
-            callback(accountAttendance)
         }.start()
 
     }

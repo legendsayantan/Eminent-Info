@@ -23,7 +23,7 @@ class SlotFragment : Fragment() {
     private var subject: String? = null
     private var host: String? = null
     private var time: String? = null
-    public var longclick: (String)->Unit? = {}
+    var longclick: (String)->Unit? = {}
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

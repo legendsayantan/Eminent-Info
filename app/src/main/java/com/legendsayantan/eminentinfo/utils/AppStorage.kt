@@ -30,7 +30,9 @@ class AppStorage(context: Context) {
 
     fun getActiveAccount():Account{
         accounts.getString("active",null)?.let {
-            return getAllAccounts().first { account -> account.ID == it }
+            getAllAccounts().firstOrNull { account -> account.ID == it }?.let {
+                return it
+            }
         }
         return getAllAccounts().first()
     }
