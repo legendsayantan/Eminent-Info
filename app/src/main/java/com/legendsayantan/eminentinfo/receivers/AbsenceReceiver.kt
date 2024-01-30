@@ -7,8 +7,6 @@ import com.legendsayantan.eminentinfo.utils.AppStorage
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.dateDifference
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.sendNotification
 import com.legendsayantan.eminentinfo.utils.Scrapers
-import java.text.SimpleDateFormat
-import java.time.Instant
 import kotlin.math.abs
 
 class AbsenceReceiver : BroadcastReceiver() {

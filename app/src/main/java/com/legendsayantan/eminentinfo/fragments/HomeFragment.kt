@@ -39,7 +39,7 @@ import com.legendsayantan.eminentinfo.adapters.ViewPagerAdapter
 import com.legendsayantan.eminentinfo.data.Account
 import com.legendsayantan.eminentinfo.receivers.AbsenceReceiver
 import com.legendsayantan.eminentinfo.receivers.BirthdayNotice
-import com.legendsayantan.eminentinfo.receivers.PhaseStarter
+import com.legendsayantan.eminentinfo.receivers.PhaseNotifier
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.beautifyCase
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.generateColor
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.relativeTime
@@ -674,7 +674,7 @@ class HomeFragment : Fragment() {
         val enqueuePhaseIntent = PendingIntent.getBroadcast(
             activity(),
             0,
-            Intent(activity(), PhaseStarter::class.java),
+            Intent(activity(), PhaseNotifier::class.java),
             PendingIntent.FLAG_IMMUTABLE
         )
         if (notifications[0]) {
@@ -687,10 +687,9 @@ class HomeFragment : Fragment() {
                 set(Calendar.MINUTE, past.get(Calendar.MINUTE))
                 set(Calendar.SECOND, 0)
             }.timeInMillis
-            alarmManager.setRepeating(
+            alarmManager.set(
                 AlarmManager.RTC_WAKEUP,
                 unixtime,
-                AlarmManager.INTERVAL_DAY,
                 enqueuePhaseIntent
             )
         } else alarmManager.cancel(enqueuePhaseIntent)

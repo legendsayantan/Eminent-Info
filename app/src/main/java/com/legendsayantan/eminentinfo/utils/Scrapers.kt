@@ -212,10 +212,10 @@ class Scrapers(val context: Context) {
 
     fun retrieveAttendance(
         acc: Account,
-        fullReport: Boolean = true,
         callback: (AccountAttendance?) -> Unit
     ) {
         val usedUrl = "${getBaseUrl(acc.ID)}/student_attendance/student/${acc.accessor}"
+        var pageCount = 1
         Thread {
             try {
                 val response: Connection.Response = Jsoup.connect(usedUrl)
@@ -276,22 +276,11 @@ class Scrapers(val context: Context) {
                         layout.html(html)
 
                         if (option.text().contains("all", true) && i == 0) {
-                            val table =
-                                layout.getElementById("leave_reports")?.getElementById("listing")
-                            val absences = table?.getElementsByTag("tr")?.let { it.subList(2, it.size) }
-                            absences?.forEachIndexed { index, element ->
-                                val date = dateAsUnix(
-                                    element.getElementsByClass("col-3")[0].text().trim()
-                                ) + index
-                                val subject = element.getElementsByClass("col-3")[2].text()
-                                if (dateDifference(System.currentTimeMillis(),date) < 7 &&
-                                    accountAttendance.absence.keys.find {
-                                        dateDifference(it, date) == 0 &&
-                                                accountAttendance.absence[it] == subject
-                                    } == null
-                                ) accountAttendance.absence[date] = subject
+                            val pages = layout.getElementsByClass("pagination")
+                                .let { if (it.size > 0) it[0]?.getElementsByTag("a") else null }
+                            if (pages != null) {
+                                pageCount = pages[pages.size - 2].text().toInt()
                             }
-                            if (!fullReport) return@forEach
                         }
                         val attended =
                             layout.getElementsByClass("col-20").last()?.text()?.replace("%", "")
@@ -302,8 +291,73 @@ class Scrapers(val context: Context) {
                     }
                     accountAttendance.subjects.add(subAttendance)
                 }
-                callback(accountAttendance)
-            }catch (e:Exception){
+                extractAuthToken(doc.html())?.let { authToken ->
+                    getAbsence(acc, authToken, pageCount) {
+                        accountAttendance.absence = it ?: hashMapOf()
+                        callback(accountAttendance)
+                    }
+                }
+            } catch (e: Exception) {
+                callback(null)
+            }
+        }.start()
+    }
+
+    fun getAbsence(
+        acc: Account,
+        authToken: String,
+        pageAt: Int,
+        callback: (HashMap<Long, String>?) -> Unit
+    ) {
+        val usedUrl = "${getBaseUrl(acc.ID)}/student_attendance/student/${acc.accessor}"
+        Thread {
+            try {
+                // Submit the form with the provided data
+                val formResponse: Connection.Response = Jsoup.connect(usedUrl)
+                    .data(
+                        mapOf(
+                            "authenticity_token" to authToken,
+                            "advance_search[subject_id]" to "",
+                            "advance_search[mode]" to "Overall",
+                            "page" to pageAt.toString(),
+                            "commit" to "► OK"
+                        )
+                    )
+                    .header("X-Csrf-Token", acc.csrfToken)
+                    .method(Connection.Method.POST)
+                    .cookie(
+                        "_fedena_session_",
+                        acc.sessionKey
+                    )  // Use cookies from the previous response
+                    .execute()
+
+
+                val html = formResponse.body().split("\")")[0]
+                    .replace("Element.update(\"report\", \"", "")
+                    .replace("\\n", "")
+                    .replace("\\", "")
+
+                val layout = Element("div")
+                layout.html(html)
+
+                val table =
+                    layout.getElementById("leave_reports")?.getElementById("listing")
+                val absences = table?.getElementsByTag("tr")?.let { it.subList(2, it.size) }
+                val absenceData = hashMapOf<Long, String>()
+                absences?.forEachIndexed { index, element ->
+                    val date = dateAsUnix(
+                        element.getElementsByClass("col-3")[0].text().trim()
+                    ) + index
+                    val subject = element.getElementsByClass("col-3")[2].text()
+                    if (dateDifference(System.currentTimeMillis(), date) < 7 &&
+                        absenceData.keys.find {
+                            dateDifference(it, date) == 0 &&
+                                    absenceData[it] == subject
+                        } == null
+                    ) absenceData[date] = subject
+                }
+                callback(absenceData)
+            } catch (e: Exception) {
                 callback(null)
             }
         }.start()
