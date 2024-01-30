@@ -111,17 +111,17 @@ class PhaseNotifier : BroadcastReceiver() {
                 PendingIntent.FLAG_IMMUTABLE
             )
             if (enable) {
-                val absCalendar = Calendar.getInstance()
-                absCalendar.timeInMillis = time
+                val unixCalendar = Calendar.getInstance()
+                unixCalendar.timeInMillis = time
                 val calendar = Calendar.getInstance()
                 calendar.timeInMillis = System.currentTimeMillis()
-                calendar.set(Calendar.HOUR_OF_DAY, absCalendar.get(Calendar.HOUR_OF_DAY))
-                calendar.set(Calendar.MINUTE, absCalendar.get(Calendar.MINUTE))
+                calendar.set(Calendar.HOUR_OF_DAY, unixCalendar.get(Calendar.HOUR_OF_DAY))
+                calendar.set(Calendar.MINUTE, unixCalendar.get(Calendar.MINUTE))
                 calendar.set(Calendar.SECOND, 1)
                 if (nextDay) calendar.add(Calendar.DAY_OF_YEAR, 1)
                 alarmManager.set(
                     AlarmManager.RTC_WAKEUP,
-                    if (time == -1L) calendar.timeInMillis else time,
+                    calendar.timeInMillis,
                     periodIntent
                 )
             } else {
