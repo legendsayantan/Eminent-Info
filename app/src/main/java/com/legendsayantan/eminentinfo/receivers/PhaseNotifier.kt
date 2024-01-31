@@ -83,7 +83,7 @@ class PhaseNotifier : BroadcastReceiver() {
                     }.timeInMillis
                 currentSlotIndex =
                     todaySlots.periods.indexOfFirst { abs(millisToday - it.startTime) < it.duration }
-                if (currentSlotIndex > 0) {
+                if (currentSlotIndex >= 0) {
                     //classes running
                     current = todaySlots.periods[currentSlotIndex]
                 }
