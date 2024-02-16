@@ -395,7 +395,7 @@ class HomeFragment : Fragment() {
                     activity().runOnUiThread {
                         if (!it.isNullOrEmpty()) {
                             val tableData = it.entries.sortedByDescending { it.key }
-                                .groupBy { SimpleDateFormat("EEE, DD MMM").format(it.key) }
+                                .groupBy { SimpleDateFormat("EEE, dd MMM").format(it.key) }
                             tableData.forEach { map ->
                                 val row = TableRow(context)
                                 val date = TextView(context)
@@ -467,7 +467,7 @@ class HomeFragment : Fragment() {
             val headingRow = TableRow(context)
             headingRow.addView(TextView(context).apply {
                 text = "Last updated ${
-                    SimpleDateFormat("DD MMM HH:mm").format(
+                    SimpleDateFormat("dd MMM HH:mm").format(
                         Calendar.getInstance()
                             .apply { timeInMillis = storage.getAttendance(acc.ID).lastUpdated }.time
                     )
@@ -538,7 +538,7 @@ class HomeFragment : Fragment() {
         try {
             val days =
                 storage.getAttendance(acc.ID).absence.entries.sortedByDescending { it.key }
-                    .groupBy { SimpleDateFormat("EEE, DD MMM").format(it.key) }
+                    .groupBy { SimpleDateFormat("EEE, dd MMM").format(it.key) }
             days.forEach { day ->
                 val row = TableRow(context)
                 val date = TextView(context)
@@ -547,7 +547,7 @@ class HomeFragment : Fragment() {
                 date.textSize = 16f
                 date.setTextColor(resources.getColor(R.color.green, null))
                 row.addView(date)
-                day.value.forEachIndexed { index, mutableEntry ->
+                day.value.forEachIndexed { _, mutableEntry ->
                     val news = TextView(context)
                     news.text =
                         mutableEntry.value.split(" ").joinToString("") { it.substring(0, 1) }

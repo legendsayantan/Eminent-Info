@@ -349,8 +349,7 @@ class Scrapers(val context: Context) {
                         element.getElementsByClass("col-3")[0].text().trim()
                     ) + index
                     val subject = element.getElementsByClass("col-3")[2].text()
-                    if (dateDifference(System.currentTimeMillis(), date) < 7 &&
-                        absenceData.keys.find {
+                    if (absenceData.keys.find {
                             dateDifference(it, date) == 0 &&
                                     absenceData[it] == subject
                         } == null

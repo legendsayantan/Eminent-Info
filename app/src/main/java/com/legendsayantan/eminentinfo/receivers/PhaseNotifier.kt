@@ -26,6 +26,7 @@ class PhaseNotifier : BroadcastReceiver() {
                     storage.getTimeTable(it.ID)
                 )
             }
+        val sdf = SimpleDateFormat("hh:mm")
         val currentSlotsCollection =
             activeSlotsCollection.filter { it.first != null }.map { it.first!! }
         val nextSlotsCollection =
@@ -35,7 +36,6 @@ class PhaseNotifier : BroadcastReceiver() {
             val next =
                 nextSlotsCollection.let { slot -> if (slot.isNotEmpty()) slot.sortedBy { it.startTime }[0] else null }
             if (now.subject.split("(")[0].isNotEmpty()) {
-                val sdf = SimpleDateFormat("hh:mm")
                 context.sendNotification(
                     "Now : ${now.subject.split("(")[0].trim()} ${now.host.let { if (it.isNotEmpty()) "- $it" else "" }}",
                     next?.let {
@@ -50,7 +50,7 @@ class PhaseNotifier : BroadcastReceiver() {
             }
         } else {
             if (0 != context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE)
-                context.sendNotification("Debug Notification", "no periods now", 0)
+                context.sendNotification("Debug - no periods now","next: "+sdf.format(nextSlotsCollection[0].startTime), 0)
         }
         if (nextSlotsCollection.isNotEmpty()) {
             context.setEnablePhaseNoti(
