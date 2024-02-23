@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:background="@color/transparent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/materialCardView2"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="100dp"
+        android:layout_marginBottom="50dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:foregroundGravity="center"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_gravity="center"
+            android:layout_height="match_parent">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:gravity="center"
+                android:orientation="vertical">
+                <com.rajat.pdfviewer.PdfRendererView
+                    android:id="@+id/pdf"
+                    app:pdfView_enableLoadingForPages="true"
+                    app:pdfView_quality="enhanced"
+                    app:pdfView_engine="google"
+                    app:pdfView_progressBar="@color/green"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:pdfView_showDivider="false" />
+                <ImageView
+                    android:id="@+id/image"
+                    android:layout_width="match_parent"
+                    android:layout_height="500dp"/>
+            </LinearLayout>
+        </ScrollView>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:gravity="center"
+        app:layout_constraintBottom_toTopOf="@+id/materialCardView2"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" >
+        <TextView
+            android:id="@+id/title"
+            android:text="Notice"
+            android:gravity="center"
+            android:textColor="@color/green"
+            android:textSize="18sp"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"/>
+        <ImageView
+            android:id="@+id/external"
+            android:src="@drawable/baseline_open_in_new_24"
+            android:layout_width="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_height="wrap_content"
+            app:tint="@color/green" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

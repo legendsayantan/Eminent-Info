@@ -46,8 +46,6 @@ import com.legendsayantan.eminentinfo.utils.Misc.Companion.relativeTime
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.requestIgnoreBatteryOptimizations
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.shortMonth
 import com.legendsayantan.eminentinfo.utils.Scrapers
-import com.rajat.pdfviewer.PdfViewerActivity
-import com.rajat.pdfviewer.util.saveTo
 import java.text.SimpleDateFormat
 import java.time.DayOfWeek
 import java.util.Calendar
@@ -430,15 +428,19 @@ class HomeFragment : Fragment() {
                                         marginEnd = 15
                                     }
                                     news.setOnClickListener {
-                                        startActivity(
-                                            PdfViewerActivity.launchPdfFromUrl(
-                                                context = context,
-                                                pdfUrl = mutableEntry.value,
-                                                pdfTitle = "Notice ${index + 1} - ${map.key}",
-                                                saveTo = saveTo.ASK_EVERYTIME,
-                                                enableDownload = true
-                                            )
-                                        )
+//                                        startActivity(
+//                                            PdfViewerActivity.launchPdfFromUrl(
+//                                                context = context,
+//                                                pdfUrl = mutableEntry.value,
+//                                                pdfTitle = "Notice ${index + 1} - ${map.key}",
+//                                                saveTo = saveTo.ASK_EVERYTIME,
+//                                                enableDownload = true
+//                                            )
+//                                        )
+                                        val dialogFragment = NoticeFragment()
+                                        dialogFragment.date = mutableEntry.key
+                                        dialogFragment.url = mutableEntry.value
+                                        dialogFragment.show(requireActivity().supportFragmentManager, "NoticeFragment")
                                     }
                                     row.addView(news)
                                 }

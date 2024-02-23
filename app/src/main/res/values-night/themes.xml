@@ -15,4 +15,11 @@
         <item name="pdfView_backgroundColor">@color/light_blue</item>
         <item name="android:statusBarColor">@color/mid</item>
     </style>
+    <style name="DialogActivityTheme" parent="Theme.AppCompat.Dialog">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:colorBackgroundCacheHint">@null</item>
+        <item name="android:windowIsFloating">true</item>
+    </style>
+
 </resources>

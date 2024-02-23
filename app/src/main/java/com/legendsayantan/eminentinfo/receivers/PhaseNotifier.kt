@@ -42,7 +42,7 @@ class PhaseNotifier : BroadcastReceiver() {
                         "Next at " +
                                 sdf.format(it.startTime) +
                                 " : " +
-                                it.subject.split("(")[0].trim() + " - " + next.host
+                                it.subject.split("(")[0].trim() + " - " + next.host.split(" ")[0]
                     } ?: ("Ends at " + sdf.format(now.startTime + now.duration)),
                     "${abs(now.subject.hashCode() / 10)}2".toInt(),
                     timeout = now.duration
@@ -56,7 +56,7 @@ class PhaseNotifier : BroadcastReceiver() {
             context.setEnablePhaseNoti(
                 true,
                 nextSlotsCollection.sortedBy { it.startTime }[0].startTime,
-                currentSlotsCollection.isEmpty()
+                currentSlotsCollection.isEmpty() || currentSlotsCollection[0].startTime > nextSlotsCollection[0].startTime
             )
         } else {
             if (0 != context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE)
@@ -97,7 +97,7 @@ class PhaseNotifier : BroadcastReceiver() {
                 while (timeTable.daySlots[nextDay].periods.isEmpty()) {
                     nextDay = (nextDay + 1) % 7
                 }
-                next = timeTable.daySlots[nextDay].periods[0]
+                next = timeTable.daySlots[nextDay].periods[0].apply {  }
             }
             return Pair(current, next)
         }
