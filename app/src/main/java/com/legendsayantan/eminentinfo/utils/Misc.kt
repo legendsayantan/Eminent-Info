@@ -231,8 +231,8 @@ class Misc {
         }
         fun String.abbreviateNames(skip: Int = 0): String {
             val parts = split(", ")
-            val abbreviatedParts = parts.take(skip.coerceAtMost(parts.size-1)) +
-                    parts.drop(skip.coerceAtMost(parts.size-1)).map { it.split(" ")[0][0] + ". " + it.split(" ")[1] }
+            val abbreviatedParts = parts.take(skip.coerceAtMost(parts.size)) +
+                    parts.drop(skip.coerceAtMost(parts.size)).map { it.split(" ")[0][0] + ". " + it.split(" ")[1] }
             return abbreviatedParts.joinToString(", ")
         }
     }
