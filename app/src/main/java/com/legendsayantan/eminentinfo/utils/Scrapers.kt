@@ -159,10 +159,11 @@ class Scrapers(val context: Context) {
                     val dayIndex = days?.get(index)?.let { getDayIndex(it.text()) }
                     timeTable.daySlots[dayIndex!!] = DaySlots(slots)
                 }
-                retrieveHolidays(account) {
-                    timeTable.holidays = it
-                    callback(TimeTable.optimiseTable(timeTable))
-                }
+//                retrieveHolidays(account) {
+//                    timeTable.holidays = it
+//                    callback(TimeTable.optimiseTable(timeTable))
+//                }
+                callback(TimeTable.optimiseTable(timeTable))
             } catch (e: IOException) {
                 callback(null)
                 e.printStackTrace()

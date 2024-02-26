@@ -58,6 +58,7 @@ class Misc {
                 -1L
             }
         }
+
         fun dateAsUnix(dateString: String): Long {
             val sdf = SimpleDateFormat("dd/MM/yyyy")
             return try {
@@ -71,20 +72,34 @@ class Misc {
                 -1L
             }
         }
+
         fun shortMonth(monthNumber: Int): String {
-            val monthAbbreviations = arrayOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+            val monthAbbreviations = arrayOf(
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December"
+            )
             return monthAbbreviations[monthNumber - 1]
         }
 
-        fun relativeTime(startTime: Long, currentTime:Long, duration: Long): String {
+        fun relativeTime(startTime: Long, currentTime: Long, duration: Long): String {
             val elapsedTime = currentTime - startTime
             val remainingTime = startTime + duration - currentTime
 
             val absoluteElapsedTime = abs(elapsedTime)
             val absoluteRemainingTime = abs(remainingTime)
 
-            val isEventInProgress = elapsedTime in 0..< duration
-            val isEventEndingSoon = absoluteRemainingTime <= duration/3
+            val isEventInProgress = elapsedTime in 0..<duration
+            val isEventEndingSoon = absoluteRemainingTime <= duration / 3
             val isEventCompleted = elapsedTime >= duration
 
 
@@ -95,6 +110,7 @@ class Misc {
                 else -> "Starts in ${formatTime(absoluteElapsedTime)}"
             }
         }
+
         fun formatTime(timeInMillis: Long): String {
             val hours = TimeUnit.MILLISECONDS.toHours(timeInMillis)
             val minutes = TimeUnit.MILLISECONDS.toMinutes(timeInMillis) % 60
@@ -111,7 +127,7 @@ class Misc {
             }
 
             // Calculate hue based on the adjusted value
-            val hue = (adjustedValue * 1f)-30 // Adjust multiplier as needed
+            val hue = (adjustedValue * 1f) - 30 // Adjust multiplier as needed
 
             // Create a color using HSL values
             return Color.HSVToColor(floatArrayOf(hue, 0.75f, 1f))
@@ -123,10 +139,12 @@ class Misc {
                     .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
             }
         }
-        fun String.unParenthesis():String{
+
+        fun String.unParenthesis(): String {
             val regex = Regex("\\([^)]*\\)")
             return replace(regex, "")
         }
+
         fun dateDifference(mainDate: Long, compareDate: Long): Int {
             val c1 = Calendar.getInstance().apply {
                 timeInMillis = mainDate
@@ -141,6 +159,7 @@ class Misc {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
             startActivity(intent)
         }
+
         @SuppressLint("BatteryLife")
         fun Activity.requestIgnoreBatteryOptimizations() {
             if (!(getSystemService(AppCompatActivity.POWER_SERVICE) as PowerManager).isIgnoringBatteryOptimizations(
@@ -158,7 +177,13 @@ class Misc {
         }
 
         @SuppressLint("MissingPermission")
-        fun Context.sendNotification(title: String, message: String, id: Int,timeout:Long=0, intent: Intent? = null) {
+        fun Context.sendNotification(
+            title: String,
+            message: String,
+            id: Int,
+            timeout: Long = 0,
+            intent: Intent? = null
+        ) {
             val notificationManager = getSystemService(NotificationManager::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val channel = NotificationChannel(
@@ -176,16 +201,39 @@ class Misc {
                 .setSmallIcon(com.legendsayantan.eminentinfo.R.drawable.collegelogo)
                 .setAutoCancel(true)
                 .setSilent(true)
-            if(intent!=null){
-                val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+            if (intent != null) {
+                val pendingIntent =
+                    PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
                 notification.setContentIntent(pendingIntent)
             }
-            if(timeout>0){
+            if (timeout > 0) {
                 notification.setTimeoutAfter(timeout)
             }
             notificationManager.notify(id, notification.build())
         }
 
-
+        fun extractNoticeName(url: String): String? {
+            val splits = Uri.decode(url)
+                .split(".pdf")[0]
+                    .split(".jpg")[0]
+                        .split("/")
+            splits[splits.size - 1].let {
+                return if(it.contains("New_Doc") || it.length<5 ) null
+                else it.replace("_notice", "",true)
+                    .replace("notice", "",true)
+                    .replace("_", " ")
+                    .replace("semester","sem",true)
+                    .replace("for","-",true)
+                    .replace(" and",",",true)
+                    .replace("\\(.*?\\)".toRegex(), "")
+                    .beautifyCase()
+            }
+        }
+        fun String.abbreviateNames(skip: Int = 0): String {
+            val parts = split(", ")
+            val abbreviatedParts = parts.take(skip.coerceAtMost(parts.size-1)) +
+                    parts.drop(skip.coerceAtMost(parts.size-1)).map { it.split(" ")[0][0] + ". " + it.split(" ")[1] }
+            return abbreviatedParts.joinToString(", ")
+        }
     }
 }

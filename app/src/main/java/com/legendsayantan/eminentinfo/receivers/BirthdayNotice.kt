@@ -3,12 +3,11 @@ package com.legendsayantan.eminentinfo.receivers
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.legendsayantan.eminentinfo.NoticeView
 import com.legendsayantan.eminentinfo.utils.AppStorage
+import com.legendsayantan.eminentinfo.utils.Misc
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.sendNotification
 import com.legendsayantan.eminentinfo.utils.Scrapers
-import com.rajat.pdfviewer.PdfViewerActivity
-import com.rajat.pdfviewer.util.saveTo
-import java.text.SimpleDateFormat
 import java.util.Calendar
 import kotlin.math.abs
 
@@ -55,15 +54,19 @@ class BirthdayNotice : BroadcastReceiver() {
                                         sentNotices.add(notice.value)
                                         context.sendNotification(
                                             "Eminent published a Notice today",
-                                            "Click to open",
+                                            Misc.extractNoticeName(notice.value)?:"Click to view",
                                             ("${abs(notice.value.hashCode()/10)}1").toInt(),
-                                            intent = PdfViewerActivity.launchPdfFromUrl(
-                                                context,
-                                                notice.value,
-                                                "Notice - ${SimpleDateFormat("DD/MM/YYYY").format(notice.key)}",
-                                                saveTo = saveTo.ASK_EVERYTIME,
-                                                enableDownload = true
-                                            )
+//                                            intent = PdfViewerActivity.launchPdfFromUrl(
+//                                                context,
+//                                                notice.value,
+//                                                "Notice - ${SimpleDateFormat("DD/MM/YYYY").format(notice.key)}",
+//                                                saveTo = saveTo.ASK_EVERYTIME,
+//                                                enableDownload = true
+//                                            )
+                                            intent = Intent(context,NoticeView::class.java).apply {
+                                                putExtra("date",notice.key)
+                                                putExtra("url",notice.value)
+                                            }
                                         )
                                     }
                                 }

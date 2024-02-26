@@ -33,6 +33,7 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.legendsayantan.eminentinfo.MainActivity
+import com.legendsayantan.eminentinfo.NoticeView
 import com.legendsayantan.eminentinfo.R
 import com.legendsayantan.eminentinfo.adapters.BirthdayListAdapter
 import com.legendsayantan.eminentinfo.adapters.ViewPagerAdapter
@@ -40,6 +41,8 @@ import com.legendsayantan.eminentinfo.data.Account
 import com.legendsayantan.eminentinfo.receivers.AbsenceReceiver
 import com.legendsayantan.eminentinfo.receivers.BirthdayNotice
 import com.legendsayantan.eminentinfo.receivers.PhaseNotifier
+import com.legendsayantan.eminentinfo.utils.Misc
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.abbreviateNames
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.beautifyCase
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.generateColor
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.relativeTime
@@ -249,7 +252,7 @@ class HomeFragment : Fragment() {
                     adapter.addFragment(
                         SlotFragment.newInstance(
                             periodSlot.subject,
-                            periodSlot.host,
+                            periodSlot.host.abbreviateNames(1),
                             if (slotIndex >= 0 && (abs(slotIndex - index) <= 1)) {
                                 relativeTime(periodSlot.startTime, now, periodSlot.duration)
                             } else {
@@ -300,7 +303,7 @@ class HomeFragment : Fragment() {
                         adapter.addFragment(
                             SlotFragment.newInstance(
                                 periodSlot.subject,
-                                periodSlot.host,
+                                periodSlot.host.abbreviateNames(1),
                                 (if (c.get(Calendar.HOUR) == 0) "0" else "") +
                                         c.get(Calendar.HOUR).toString() + ":" +
                                         (if (c.get(Calendar.MINUTE) < 10) "0" else "") +
@@ -361,7 +364,7 @@ class HomeFragment : Fragment() {
                 loaderView.visibility = View.VISIBLE
                 scrapers.getBirthdays(acc, Calendar.getInstance()) {
                     activity().runOnUiThread {
-                        if (!it.isNullOrEmpty()) {
+                        if (it != null) {
                             val adapter = BirthdayListAdapter(context, it)
                             listView.adapter = adapter
                             updateItems(listView, adapter)
@@ -389,10 +392,10 @@ class HomeFragment : Fragment() {
             if (collapsed) {
                 if (loaderView.visibility == View.VISIBLE) return@setOnClickListener
                 loaderView.visibility = View.VISIBLE
-                scrapers.getNews(acc) {
+                scrapers.getNews(acc) { allNews->
                     activity().runOnUiThread {
-                        if (!it.isNullOrEmpty()) {
-                            val tableData = it.entries.sortedByDescending { it.key }
+                        if (!allNews.isNullOrEmpty()) {
+                            val tableData = allNews.entries.sortedByDescending { it.key }
                                 .groupBy { SimpleDateFormat("EEE, dd MMM").format(it.key) }
                             tableData.forEach { map ->
                                 val row = TableRow(context)
@@ -417,7 +420,8 @@ class HomeFragment : Fragment() {
                                             null
                                         )
                                     )
-                                    news.text = "Notice ${index + 1}"
+                                    val names = Misc.extractNoticeName(mutableEntry.value)?.split(" ")
+                                    news.text = names?.subList(0,2.coerceAtMost(names.size))?.joinToString(" ") ?: "Notice ${index + 1}"
                                     news.textSize = 15f
                                     news.setTextColor(resources.getColor(R.color.white, null))
                                     news.layoutParams = TableRow.LayoutParams(
@@ -437,18 +441,25 @@ class HomeFragment : Fragment() {
 //                                                enableDownload = true
 //                                            )
 //                                        )
-                                        val dialogFragment = NoticeFragment()
-                                        dialogFragment.date = mutableEntry.key
-                                        dialogFragment.url = mutableEntry.value
-                                        dialogFragment.show(requireActivity().supportFragmentManager, "NoticeFragment")
+                                        startActivity(
+                                            Intent(
+                                                requireContext(),
+                                                NoticeView::class.java
+                                            ).apply {
+                                                putExtra("date", mutableEntry.key)
+                                                putExtra("url", mutableEntry.value)
+                                            })
                                     }
                                     row.addView(news)
                                 }
                                 table.addView(row)
                             }
                             initialiseNotice(acc, !collapsed)
-                        } else {
+                        } else if(allNews==null){
                             Toast.makeText(context, "Failed to load.", Toast.LENGTH_SHORT).show()
+                        }else{
+                            Toast.makeText(context, "None found.", Toast.LENGTH_SHORT).show()
+                            initialiseNotice(acc, collapsed)
                         }
                     }
                 }

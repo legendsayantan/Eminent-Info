@@ -10,6 +10,8 @@ import com.legendsayantan.eminentinfo.data.DaySlots
 import com.legendsayantan.eminentinfo.data.PeriodSlot
 import com.legendsayantan.eminentinfo.data.TimeTable
 import com.legendsayantan.eminentinfo.utils.AppStorage
+import com.legendsayantan.eminentinfo.utils.Misc
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.abbreviateNames
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.sendNotification
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -37,12 +39,12 @@ class PhaseNotifier : BroadcastReceiver() {
                 nextSlotsCollection.let { slot -> if (slot.isNotEmpty()) slot.sortedBy { it.startTime }[0] else null }
             if (now.subject.split("(")[0].isNotEmpty()) {
                 context.sendNotification(
-                    "Now : ${now.subject.split("(")[0].trim()} ${now.host.let { if (it.isNotEmpty()) "- $it" else "" }}",
+                    "Now : ${now.subject.split("(")[0].trim()} ${now.host.let { if (it.isNotEmpty()) "- ${it.abbreviateNames(1)}" else "" }}",
                     next?.let {
-                        "Next at " +
-                                sdf.format(it.startTime) +
+                        (if(it.startTime < now.startTime) "Tomorrow" else "Next" )+ " at " +
+                                sdf.format(it.startTime)+
                                 " : " +
-                                it.subject.split("(")[0].trim() + " - " + next.host.split(" ")[0]
+                                it.subject.split("(")[0].trim() + if(next.host.isNotEmpty()) (" - " + next.host.split(", ")[0].abbreviateNames()) else ""
                     } ?: ("Ends at " + sdf.format(now.startTime + now.duration)),
                     "${abs(now.subject.hashCode() / 10)}2".toInt(),
                     timeout = now.duration

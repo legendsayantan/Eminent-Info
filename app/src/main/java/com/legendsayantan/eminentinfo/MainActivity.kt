@@ -17,8 +17,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         window.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
-        //if appstorage has no accounts, inflate login fragment
-        //else inflate home fragment
         reloadUI()
 
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
