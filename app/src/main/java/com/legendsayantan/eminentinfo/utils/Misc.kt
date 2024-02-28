@@ -218,7 +218,7 @@ class Misc {
                     .split(".jpg")[0]
                         .split("/")
             splits[splits.size - 1].let {
-                return if(it.contains("New_Doc") || it.length<5 ) null
+                return if(it.contains("new_doc",true) || it.length<5 ) null
                 else it.replace("_notice", "",true)
                     .replace("notice", "",true)
                     .replace("_", " ")

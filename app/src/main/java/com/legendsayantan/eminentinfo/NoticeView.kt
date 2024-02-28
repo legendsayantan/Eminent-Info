@@ -37,11 +37,15 @@ class NoticeView : AppCompatActivity() {
         }
         if(url.contains(".pdf")){
             imageView.visibility = View.GONE
-            pdfView.initWithUrl(
-                url = url,
-                lifecycle = lifecycle,
-                lifecycleCoroutineScope = lifecycleScope,
-            )
+            try {
+                pdfView.initWithUrl(
+                    url = url,
+                    lifecycle = lifecycle,
+                    lifecycleCoroutineScope = lifecycleScope,
+                )
+            }catch (e:Exception){
+                finish()
+            }
         }else{
             pdfView.visibility = View.GONE
             Glide
@@ -56,6 +60,7 @@ class NoticeView : AppCompatActivity() {
                         target: Target<Drawable>,
                         isFirstResource: Boolean
                     ): Boolean {
+                        finish()
                         return false
                     }
 
