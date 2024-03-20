@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.legendsayantan.eminentinfo.utils.AppStorage
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.beautifyCase
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.dateDifference
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.sendNotification
 import com.legendsayantan.eminentinfo.utils.Scrapers
@@ -26,7 +27,7 @@ class AbsenceReceiver : BroadcastReceiver() {
                             if (absent.isNotEmpty()) {
                                 context.sendNotification(
                                     "${acc.name} was marked as absent today in the following :",
-                                    absent.entries.joinToString { it.value },
+                                    absent.entries.joinToString { it.value.beautifyCase() },
                                     ("${abs((acc.name).hashCode() / 10)}3").toInt()
                                 )
                             }

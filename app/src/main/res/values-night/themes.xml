@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.EminentAlerts" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Base.Theme.EminentInfo" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your dark theme here. -->
         <item name="colorPrimary">@color/green</item>
         <item name="colorOnPrimary">@color/mid</item>
@@ -15,7 +15,7 @@
         <item name="pdfView_backgroundColor">@color/light_blue</item>
         <item name="android:statusBarColor">@color/mid</item>
     </style>
-    <style name="DialogActivityTheme" parent="Base.Theme.EminentAlerts">
+    <style name="DialogActivityTheme" parent="Base.Theme.EminentInfo">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:background">@android:color/transparent</item>
         <item name="android:windowBackground">@color/transparent</item>

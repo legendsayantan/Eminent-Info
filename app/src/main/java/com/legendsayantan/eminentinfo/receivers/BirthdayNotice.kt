@@ -54,18 +54,11 @@ class BirthdayNotice : BroadcastReceiver() {
                                         sentNotices.add(notice.value)
                                         context.sendNotification(
                                             "Eminent published a Notice today",
-                                            Misc.extractNoticeName(notice.value)?:"Click to view",
-                                            ("${abs(notice.value.hashCode()/10)}1").toInt(),
-//                                            intent = PdfViewerActivity.launchPdfFromUrl(
-//                                                context,
-//                                                notice.value,
-//                                                "Notice - ${SimpleDateFormat("DD/MM/YYYY").format(notice.key)}",
-//                                                saveTo = saveTo.ASK_EVERYTIME,
-//                                                enableDownload = true
-//                                            )
-                                            intent = Intent(context,NoticeView::class.java).apply {
-                                                putExtra("date",notice.key)
-                                                putExtra("url",notice.value)
+                                            Misc.extractNoticeName(notice.value) ?: "Click to view",
+                                            ("${abs(notice.value.hashCode() / 10)}1").toInt(),
+                                            intent = Intent(context, NoticeView::class.java).apply {
+                                                putExtra("date", notice.key)
+                                                putExtra("url", notice.value)
                                             }
                                         )
                                     }
