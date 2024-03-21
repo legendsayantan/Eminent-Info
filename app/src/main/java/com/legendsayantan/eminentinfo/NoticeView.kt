@@ -25,7 +25,7 @@ class NoticeView : AppCompatActivity() {
     var date = 0L
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.dialog_notice)
+        setContentView(R.layout.layout_notice)
         url = intent.getStringExtra("url")!!
         date = intent.getLongExtra("date",System.currentTimeMillis())
         findViewById<TextView>(R.id.title)?.text = Misc.extractNoticeName(url)?:"Notice - ${SimpleDateFormat("dd/MM/YYYY").format(date)}"

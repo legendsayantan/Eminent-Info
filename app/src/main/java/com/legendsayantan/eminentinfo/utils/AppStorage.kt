@@ -67,4 +67,11 @@ class AppStorage(context: Context) {
         attendance.edit().putString(ID, Gson().toJson(att)).apply()
     }
 
+    val notices = context.getSharedPreferences("notices",Context.MODE_PRIVATE)
+    fun getNotices(ID:String):HashMap<Long,String>{
+        return Gson().fromJson(notices.getString(ID,"{}"),HashMap::class.java).mapKeys { it.key.toString().toLong() } as HashMap<Long, String>
+    }
+    fun saveNotices(ID:String, notices:HashMap<Long,String>){
+        this.notices.edit().putString(ID, Gson().toJson(notices)).apply()
+    }
 }

@@ -44,6 +44,8 @@ import com.legendsayantan.eminentinfo.receivers.PhaseNotifier
 import com.legendsayantan.eminentinfo.utils.Misc
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.abbreviateNames
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.beautifyCase
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.combineHashMaps
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.dataAge
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.generateColor
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.relativeTime
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.requestIgnoreBatteryOptimizations
@@ -382,90 +384,85 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun initialiseNotice(acc: Account, collapsed: Boolean = true) {
-        val openBtn = requireView().findViewById<ImageView>(R.id.noticeLoad)
+    private fun initialiseNotice(
+        acc: Account,
+        allNews: HashMap<Long, String> = storage.getNotices(acc.ID)
+    ) {
+        val reloadBtn = requireView().findViewById<ImageView>(R.id.noticeRefresh)
         val table = requireView().findViewById<TableLayout>(R.id.noticeTable)
         val loaderView = requireView().findViewById<TextView>(R.id.loadingNotice)
         loaderView.visibility = View.GONE
-        openBtn.rotation = if (collapsed) 90f else 0f
-        openBtn.setOnClickListener {
-            if (collapsed) {
-                if (loaderView.visibility == View.VISIBLE) return@setOnClickListener
-                loaderView.visibility = View.VISIBLE
-                scrapers.getNews(acc) { allNews->
+        table.removeAllViews()
+        if (allNews.isNotEmpty()) {
+            val tableData = allNews.entries.sortedByDescending { it.key }
+                .groupBy { SimpleDateFormat("EEE, dd MMM").format(it.key) }
+            tableData.forEach { map ->
+                val row = TableRow(context)
+                val date = TextView(context)
+                date.text = map.key
+                date.setPadding(25, 20, 25, 20)
+                date.textSize = 16f
+                date.setTextColor(resources.getColor(R.color.green, null))
+                row.addView(date)
+                map.value.forEachIndexed { index, mutableEntry ->
+                    val news = MaterialButton(context)
+                    news.strokeColor = ColorStateList.valueOf(
+                        resources.getColor(
+                            R.color.mid,
+                            null
+                        )
+                    )
+                    news.strokeWidth = 2
+                    news.backgroundTintList = ColorStateList.valueOf(
+                        resources.getColor(
+                            R.color.transparent,
+                            null
+                        )
+                    )
+                    val names = Misc.extractNoticeName(mutableEntry.value)?.split(" ")
+                    news.text = names?.subList(0, 2.coerceAtMost(names.size))?.joinToString(" ")
+                        ?: "Notice ${index + 1}"
+                    news.textSize = 15f
+                    news.setTextColor(resources.getColor(R.color.white, null))
+                    news.layoutParams = TableRow.LayoutParams(
+                        TableRow.LayoutParams.WRAP_CONTENT,
+                        100
+                    ).apply {
+                        marginStart = 5
+                        marginEnd = 15
+                    }
+                    news.setOnClickListener {
+                        startActivity(
+                            Intent(
+                                requireContext(),
+                                NoticeView::class.java
+                            ).apply {
+                                putExtra("date", mutableEntry.key)
+                                putExtra("url", mutableEntry.value)
+                            })
+                    }
+                    row.addView(news)
+                }
+                table.addView(row)
+            }
+        }
+        reloadBtn.setOnClickListener {
+            if (loaderView.visibility == View.VISIBLE) return@setOnClickListener
+            reloadBtn.animate().rotation(360f).setDuration(1000).start()
+            loaderView.visibility = View.VISIBLE
+            scrapers.getNews(
+                acc,
+                dataAge(allNews).coerceAtMost(15)
+            ) { foundNews ->
+                combineHashMaps(foundNews?: hashMapOf(),allNews).apply {
+                    entries.removeIf { it.key < (System.currentTimeMillis() - 1296000000) }
+                    storage.saveNotices(acc.ID, this)
                     activity().runOnUiThread {
-                        if (!allNews.isNullOrEmpty()) {
-                            val tableData = allNews.entries.sortedByDescending { it.key }
-                                .groupBy { SimpleDateFormat("EEE, dd MMM").format(it.key) }
-                            tableData.forEach { map ->
-                                val row = TableRow(context)
-                                val date = TextView(context)
-                                date.text = map.key
-                                date.setPadding(25, 20, 25, 20)
-                                date.textSize = 16f
-                                date.setTextColor(resources.getColor(R.color.green, null))
-                                row.addView(date)
-                                map.value.forEachIndexed { index, mutableEntry ->
-                                    val news = MaterialButton(context)
-                                    news.strokeColor = ColorStateList.valueOf(
-                                        resources.getColor(
-                                            R.color.mid,
-                                            null
-                                        )
-                                    )
-                                    news.strokeWidth = 2
-                                    news.backgroundTintList = ColorStateList.valueOf(
-                                        resources.getColor(
-                                            R.color.transparent,
-                                            null
-                                        )
-                                    )
-                                    val names = Misc.extractNoticeName(mutableEntry.value)?.split(" ")
-                                    news.text = names?.subList(0,2.coerceAtMost(names.size))?.joinToString(" ") ?: "Notice ${index + 1}"
-                                    news.textSize = 15f
-                                    news.setTextColor(resources.getColor(R.color.white, null))
-                                    news.layoutParams = TableRow.LayoutParams(
-                                        TableRow.LayoutParams.WRAP_CONTENT,
-                                        100
-                                    ).apply {
-                                        marginStart = 5
-                                        marginEnd = 15
-                                    }
-                                    news.setOnClickListener {
-//                                        startActivity(
-//                                            PdfViewerActivity.launchPdfFromUrl(
-//                                                context = context,
-//                                                pdfUrl = mutableEntry.value,
-//                                                pdfTitle = "Notice ${index + 1} - ${map.key}",
-//                                                saveTo = saveTo.ASK_EVERYTIME,
-//                                                enableDownload = true
-//                                            )
-//                                        )
-                                        startActivity(
-                                            Intent(
-                                                requireContext(),
-                                                NoticeView::class.java
-                                            ).apply {
-                                                putExtra("date", mutableEntry.key)
-                                                putExtra("url", mutableEntry.value)
-                                            })
-                                    }
-                                    row.addView(news)
-                                }
-                                table.addView(row)
-                            }
-                            initialiseNotice(acc, !collapsed)
-                        } else if(allNews==null){
-                            Toast.makeText(context, "Failed to load.", Toast.LENGTH_SHORT).show()
-                        }else{
-                            Toast.makeText(context, "None found.", Toast.LENGTH_SHORT).show()
-                            initialiseNotice(acc, collapsed)
-                        }
+                        loaderView.visibility = View.GONE
+                        initialiseNotice(acc, this)
                     }
                 }
-            } else {
-                table.removeAllViews()
-                initialiseNotice(acc, !collapsed)
+
             }
         }
     }
@@ -630,14 +627,7 @@ class HomeFragment : Fragment() {
                 storage.saveNotificationSettings(acc.ID, notifications)
                 registerAlarmManager(acc.ID)
             }
-            val timeTableSwitch = MaterialSwitch(context)
-            val birthdaySwitch = MaterialSwitch(context)
-            val noticeSwitch = MaterialSwitch(context)
-            val absenceSwitch = MaterialSwitch(context)
-            timeTableSwitch.text = "Next Periods"
-            birthdaySwitch.text = "Birthdays of classmates"
-            noticeSwitch.text = "New Notices"
-            absenceSwitch.text = "Marked as absent"
+
             switches.forEachIndexed { index, materialSwitch ->
                 materialSwitch.text = texts[index]
                 try {

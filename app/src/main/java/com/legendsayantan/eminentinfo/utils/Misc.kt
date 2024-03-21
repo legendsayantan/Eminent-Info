@@ -235,5 +235,19 @@ class Misc {
                     parts.drop(skip.coerceAtMost(parts.size)).map { it.split(" ")[0][0] + ". " + it.split(" ")[1] }
             return abbreviatedParts.joinToString(", ")
         }
+
+        fun combineHashMaps(map1:HashMap<Long,String>, map2:HashMap<Long,String>): HashMap<Long,String>{
+            map1.forEach { news ->
+                if (map2.entries.find { it.value.split("?Expires")[0] == news.value.split("?Expires")[0] } == null) map2[news.key] = news.value
+            }
+            return map2
+        }
+
+        fun dataAge(data: HashMap<Long, String>): Int {
+            return Calendar.getInstance().apply {
+                timeInMillis =
+                    (System.currentTimeMillis() - (data.maxOfOrNull { it.key } ?: 0))
+            }.get(Calendar.DAY_OF_YEAR) + 1
+        }
     }
 }

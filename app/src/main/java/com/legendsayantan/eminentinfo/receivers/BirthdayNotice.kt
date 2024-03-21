@@ -6,9 +6,12 @@ import android.content.Intent
 import com.legendsayantan.eminentinfo.NoticeView
 import com.legendsayantan.eminentinfo.utils.AppStorage
 import com.legendsayantan.eminentinfo.utils.Misc
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.combineHashMaps
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.dataAge
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.sendNotification
 import com.legendsayantan.eminentinfo.utils.Scrapers
 import java.util.Calendar
+import java.util.Date
 import kotlin.math.abs
 
 class BirthdayNotice : BroadcastReceiver() {
@@ -47,9 +50,23 @@ class BirthdayNotice : BroadcastReceiver() {
                     }
                     if (settings[2]) {
                         //check notices
-                        Scrapers(context).getNews(acc, 0) { notices ->
+                        val cachedNotices = appStorage.getNotices(acc.ID)
+                        Scrapers(context).getNews(
+                            acc,
+                            dataAge(cachedNotices).coerceAtMost(15)
+                        ) { notices ->
                             if (!notices.isNullOrEmpty()) {
-                                notices.forEach { notice ->
+                                appStorage.saveNotices(
+                                    acc.ID,
+                                    combineHashMaps(notices, cachedNotices).apply {
+                                        entries.removeIf { it.key < (System.currentTimeMillis() - 1296000000) }
+                                    })
+                                notices.filter {
+                                    Calendar.getInstance().apply { timeInMillis = it.key }
+                                        .get(Calendar.DAY_OF_YEAR) == Calendar.getInstance()
+                                        .apply { timeInMillis = System.currentTimeMillis() }
+                                        .get(Calendar.DAY_OF_YEAR)
+                                }.forEach { notice ->
                                     if (!sentNotices.contains(notice.value)) {
                                         sentNotices.add(notice.value)
                                         context.sendNotification(

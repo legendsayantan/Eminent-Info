@@ -176,13 +176,13 @@
                             android:layout_width="wrap_content"
                             android:layout_height="match_parent"/>
                         <ImageView
-                            android:id="@+id/birthdayLoad"
-                            android:translationY="1dp"
-                            android:src="@drawable/baseline_keyboard_arrow_down_24"
-                            android:layout_width="wrap_content"
-                            android:layout_height="match_parent"
-                            android:paddingHorizontal="15dp"
-                            app:tint="@color/white" />
+                        android:id="@+id/birthdayLoad"
+                        android:translationY="1dp"
+                        android:src="@drawable/baseline_keyboard_arrow_down_24"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:paddingHorizontal="15dp"
+                        app:tint="@color/white" />
                     </LinearLayout>
                     <ListView
                         android:id="@+id/birthdayList"
@@ -227,10 +227,12 @@
                             android:layout_width="wrap_content"
                             android:layout_height="match_parent"/>
                         <ImageView
-                            android:id="@+id/noticeLoad"
-                            android:translationY="1dp"
-                            android:src="@drawable/baseline_keyboard_arrow_down_24"
+                            android:id="@+id/noticeRefresh"
+                            android:translationY="2dp"
+                            android:src="@drawable/baseline_refresh_24"
                             android:layout_width="wrap_content"
+                            android:scaleY="0.8"
+                            android:scaleX="0.8"
                             android:layout_height="match_parent"
                             android:paddingHorizontal="15dp"
                             app:tint="@color/white" />
