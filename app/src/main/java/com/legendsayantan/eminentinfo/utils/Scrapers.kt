@@ -14,6 +14,7 @@ import com.legendsayantan.eminentinfo.utils.Misc.Companion.dateAsUnix
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.dateDifference
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.extractIntegers
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.getDayIndex
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.shortenBatch
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.timeAsUnix
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.unParenthesis
 import org.jsoup.Connection
@@ -29,14 +30,13 @@ import kotlin.collections.HashMap
  */
 class Scrapers(val context: Context) {
 
-    fun getBaseUrl(ID: String): String {
+    private fun getBaseUrl(ID: String): String {
         return if (ID.contains("ECPT")) "https://ecpt.fedena.com" else "https://ecmt.fedena.com"
     }
 
     fun retrieveSessionKey(username: String, password: String, onSuccess: (Account?) -> Unit) {
         Thread {
             try {
-                // Replace this URL with the actual URL of the login page
                 val response: Connection.Response = Jsoup.connect(getBaseUrl(username))
                     .method(Connection.Method.POST)
                     .execute()
@@ -394,11 +394,7 @@ class Scrapers(val context: Context) {
                     list.add(
                         Birthday(
                             it.getElementsByClass("subcontent-header")[0].text().beautifyCase(),
-                            it.getElementsByClass("subcontent-info")[0].text()
-                                .replace("Batch :", "")
-                                .replace("Semester", "Sem")
-                                .replace(" - ", " · ")
-                                .trim(),
+                            it.getElementsByClass("subcontent-info")[0].text().shortenBatch(),
                             it.getElementsByTag("img")[0].attr("src")
                         )
                     )

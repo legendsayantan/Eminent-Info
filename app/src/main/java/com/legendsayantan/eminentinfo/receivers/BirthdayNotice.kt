@@ -8,10 +8,11 @@ import com.legendsayantan.eminentinfo.utils.AppStorage
 import com.legendsayantan.eminentinfo.utils.Misc
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.combineHashMaps
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.dataAge
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.dateDifference
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.sendNotification
+import com.legendsayantan.eminentinfo.utils.Misc.Companion.shortenBatch
 import com.legendsayantan.eminentinfo.utils.Scrapers
 import java.util.Calendar
-import java.util.Date
 import kotlin.math.abs
 
 class BirthdayNotice : BroadcastReceiver() {
@@ -33,7 +34,9 @@ class BirthdayNotice : BroadcastReceiver() {
                         ) { birthdays ->
                             if (!birthdays.isNullOrEmpty()) {
                                 val filtered = birthdays.filter {
-                                    it.batch.contains(acc.batch.trim(), true) && it.batch.contains(
+                                    it.batch.contains(
+                                        acc.batch.shortenBatch(), true
+                                    ) && it.batch.contains(
                                         acc.course.trim(),
                                         true
                                     )
@@ -58,14 +61,10 @@ class BirthdayNotice : BroadcastReceiver() {
                             if (!notices.isNullOrEmpty()) {
                                 appStorage.saveNotices(
                                     acc.ID,
-                                    combineHashMaps(notices, cachedNotices).apply {
-                                        entries.removeIf { it.key < (System.currentTimeMillis() - 1296000000) }
-                                    })
+                                    combineHashMaps(notices, cachedNotices, 15)
+                                )
                                 notices.filter {
-                                    Calendar.getInstance().apply { timeInMillis = it.key }
-                                        .get(Calendar.DAY_OF_YEAR) == Calendar.getInstance()
-                                        .apply { timeInMillis = System.currentTimeMillis() }
-                                        .get(Calendar.DAY_OF_YEAR)
+                                    dateDifference(System.currentTimeMillis(), it.key) == 0
                                 }.forEach { notice ->
                                     if (!sentNotices.contains(notice.value)) {
                                         sentNotices.add(notice.value)

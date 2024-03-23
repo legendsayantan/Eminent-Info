@@ -11,6 +11,7 @@ import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.view.Gravity
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -27,6 +28,7 @@ import android.widget.TableRow
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -54,23 +56,15 @@ import com.legendsayantan.eminentinfo.utils.Scrapers
 import java.text.SimpleDateFormat
 import java.time.DayOfWeek
 import java.util.Calendar
+import java.util.Date
 import java.util.Timer
 import kotlin.concurrent.timerTask
 import kotlin.math.abs
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
-
-/**
- * A simple [Fragment] subclass.
- * Use the [HomeFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
 class HomeFragment : Fragment() {
     val scrapers by lazy { Scrapers(activity()) }
     val storage by lazy { activity().appStorage }
+    val handler by lazy { Handler(context.mainLooper) }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -108,16 +102,23 @@ class HomeFragment : Fragment() {
             } else infoView.visibility = View.VISIBLE
         }
         infoView.setOnClickListener { manageAccount(acc) }
-
-        initialiseBirthdays(acc)
-        initialiseNotice(acc)
-        initialiseAttendance(acc)
+        Timer().schedule(timerTask {
+            initialiseBirthdays(acc)
+        }, 200)
+        Timer().schedule(timerTask {
+            initialiseNotice(acc)
+        }, 350)
+        Timer().schedule(timerTask {
+            initialiseAttendance(acc)
+        }, 500)
         initialiseNotifications(acc)
     }
 
     override fun onResume() {
         super.onResume()
-        initialiseTimeTable(storage.getActiveAccount())
+        Thread{
+            initialiseTimeTable(storage.getActiveAccount())
+        }.start()
     }
 
     private fun manageAccount(acc: Account) {
@@ -214,9 +215,11 @@ class HomeFragment : Fragment() {
         val container = requireView().findViewById<LinearLayout>(R.id.timetableContainer)
         val heading = requireView().findViewById<TextView>(R.id.timetableHeading)
         val table = storage.getTimeTable(acc.ID)
-        container.removeAllViews()
-        collapseBtn.rotation = if (collapsed) 90f else 0f
-        heading.text = if (collapsed) "Today :" else "Timetable :"
+        handler.post {
+            container.removeAllViews()
+            collapseBtn.rotation = if (collapsed) 90f else 0f
+            heading.text = if (collapsed) "Today :" else "Timetable :"
+        }
         try {
             if (collapsed) {
                 val viewPager = ViewPager2(context)
@@ -235,7 +238,9 @@ class HomeFragment : Fragment() {
                         table.daySlots[Calendar.getInstance().get(Calendar.DAY_OF_WEEK) % 7]
                     dayOfYear = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
                         .get(Calendar.DAY_OF_YEAR)
-                    heading.text = "Tomorrow :"
+                    handler.post {
+                        heading.text = "Tomorrow :"
+                    }
                 }
                 val hD = table.holidays.keys.find {
                     Calendar.getInstance().apply { timeInMillis = it }
@@ -246,7 +251,9 @@ class HomeFragment : Fragment() {
                     textView.text = "Holiday : ${table.holidays[hD]}"
                     textView.setPadding(0, 0, 0, 10)
                     textView.gravity = Gravity.CENTER
-                    container.addView(textView)
+                    handler.post {
+                        container.addView(textView)
+                    }
                 }
                 val slotIndex =
                     todaySlots.periods.indexOfFirst { abs(now - it.startTime) < it.duration }
@@ -269,11 +276,13 @@ class HomeFragment : Fragment() {
                         )
                     )
                 }
-                container.addView(viewPager)
-                viewPager.isUserInputEnabled = true
-                viewPager.adapter = adapter
+                handler.post {
+                    container.addView(viewPager)
+                    viewPager.isUserInputEnabled = true
+                    viewPager.adapter = adapter
+                }
                 if (slotIndex > 0) Timer().schedule(timerTask {
-                    activity().runOnUiThread { viewPager.setCurrentItem(slotIndex, true) }
+                    handler.post { viewPager.setCurrentItem(slotIndex, true) }
                 }, 500)
             } else {
                 val viewPagers = List(7) { i -> ViewPager2(context) }
@@ -320,37 +329,44 @@ class HomeFragment : Fragment() {
                     textView.text = DayOfWeek.values()[index].name.beautifyCase()
                     textView.setPadding(0, 5, 0, 0)
                     textView.gravity = Gravity.CENTER
-                    container.addView(viewPager)
+                    handler.post {
+                        container.addView(viewPager)
+                    }
                     if (index + 1 != viewPagers.size) container.addView(textView)
                     viewPager.isUserInputEnabled = true
                     viewPager.adapter = adapter
                 }
             }
-            container.setPadding(10, 10, 10, 10)
-        } catch (_: Exception) {
-        }
-        refreshBtn.setOnClickListener {
-            refreshBtn.animate().rotation(360f).setDuration(1000).start()
-            scrapers.retrieveTimetable(acc) {
-                activity().runOnUiThread {
-                    if (it != null) {
-                        storage.saveTimeTable(acc.ID, it)
-                        initialiseTimeTable(acc, collapsed)
-                        scrapers.getMoreInfo(acc) {
-                            it?.split("\n,").let { part ->
-                                acc.course = part?.get(0)?.trim() ?: ""
-                                acc.batch = part?.get(1)?.trim() ?: ""
+            handler.post {
+                container.setPadding(10, 10, 10, 10)
+            }
+        } catch (_: Exception) { }
+        handler.post {
+            refreshBtn.setOnClickListener {
+                refreshBtn.animate().rotation(360f).setDuration(1000).start()
+                scrapers.retrieveTimetable(acc) {
+                    handler.post {
+                        if (it != null) {
+                            storage.saveTimeTable(acc.ID, it)
+                            initialiseTimeTable(acc, collapsed)
+                            scrapers.getMoreInfo(acc) {
+                                it?.split("\n,").let { part ->
+                                    acc.course = part?.get(0)?.trim() ?: ""
+                                    acc.batch = part?.get(1)?.trim() ?: ""
+                                }
+                                activity().appStorage.saveAccount(acc)
                             }
-                            activity().appStorage.saveAccount(acc)
+                        } else {
+                            Toast.makeText(context, "Failed to reload.", Toast.LENGTH_SHORT).show()
                         }
-                    } else {
-                        Toast.makeText(context, "Failed to reload.", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
         }
-        collapseBtn.setOnClickListener {
-            initialiseTimeTable(acc, !collapsed)
+        handler.post {
+            collapseBtn.setOnClickListener {
+                initialiseTimeTable(acc, !collapsed)
+            }
         }
     }
 
@@ -358,28 +374,31 @@ class HomeFragment : Fragment() {
         val openBtn = requireView().findViewById<ImageView>(R.id.birthdayLoad)
         val listView = requireView().findViewById<ListView>(R.id.birthdayList)
         val loaderView = requireView().findViewById<TextView>(R.id.loadingBirthday)
-        loaderView.visibility = View.GONE
-        openBtn.rotation = if (collapsed) 90f else 0f
-        openBtn.setOnClickListener {
-            if (collapsed) {
-                if (loaderView.visibility == View.VISIBLE) return@setOnClickListener
-                loaderView.visibility = View.VISIBLE
-                scrapers.getBirthdays(acc, Calendar.getInstance()) {
-                    activity().runOnUiThread {
-                        if (it != null) {
-                            val adapter = BirthdayListAdapter(context, it)
-                            listView.adapter = adapter
-                            updateItems(listView, adapter)
-                            initialiseBirthdays(acc, !collapsed)
-                        } else {
-                            Toast.makeText(context, "Failed to load.", Toast.LENGTH_SHORT).show()
+        handler.post {
+            loaderView.visibility = View.GONE
+            openBtn.rotation = if (collapsed) 90f else 0f
+            openBtn.setOnClickListener {
+                if (collapsed) {
+                    if (loaderView.visibility == View.VISIBLE) return@setOnClickListener
+                    loaderView.visibility = View.VISIBLE
+                    scrapers.getBirthdays(acc, Calendar.getInstance()) {
+                        handler.post {
+                            if (it != null) {
+                                val adapter = BirthdayListAdapter(context, it)
+                                listView.adapter = adapter
+                                updateItems(listView, adapter)
+                                initialiseBirthdays(acc, !collapsed)
+                            } else {
+                                Toast.makeText(context, "Failed to load.", Toast.LENGTH_SHORT)
+                                    .show()
+                            }
                         }
                     }
+                } else {
+                    listView.adapter = null
+                    updateItems(listView, BirthdayListAdapter(context, listOf()))
+                    initialiseBirthdays(acc, !collapsed)
                 }
-            } else {
-                listView.adapter = null
-                updateItems(listView, BirthdayListAdapter(context, listOf()))
-                initialiseBirthdays(acc, !collapsed)
             }
         }
     }
@@ -391,16 +410,18 @@ class HomeFragment : Fragment() {
         val reloadBtn = requireView().findViewById<ImageView>(R.id.noticeRefresh)
         val table = requireView().findViewById<TableLayout>(R.id.noticeTable)
         val loaderView = requireView().findViewById<TextView>(R.id.loadingNotice)
-        loaderView.visibility = View.GONE
-        table.removeAllViews()
+        handler.post {
+            loaderView.visibility = View.GONE
+            table.removeAllViews()
+        }
         if (allNews.isNotEmpty()) {
             val tableData = allNews.entries.sortedByDescending { it.key }
-                .groupBy { SimpleDateFormat("EEE, dd MMM").format(it.key) }
+                .groupBy { SimpleDateFormat("EEE, dd MMM").format(it.key.toLong()) }
             tableData.forEach { map ->
                 val row = TableRow(context)
                 val date = TextView(context)
                 date.text = map.key
-                date.setPadding(25, 20, 25, 20)
+                date.setPadding(25, 15, 25, 15)
                 date.textSize = 16f
                 date.setTextColor(resources.getColor(R.color.green, null))
                 row.addView(date)
@@ -422,14 +443,16 @@ class HomeFragment : Fragment() {
                     val names = Misc.extractNoticeName(mutableEntry.value)?.split(" ")
                     news.text = names?.subList(0, 2.coerceAtMost(names.size))?.joinToString(" ")
                         ?: "Notice ${index + 1}"
-                    news.textSize = 15f
+                    news.textSize = 14f
                     news.setTextColor(resources.getColor(R.color.white, null))
                     news.layoutParams = TableRow.LayoutParams(
                         TableRow.LayoutParams.WRAP_CONTENT,
-                        100
+                        TableRow.LayoutParams.WRAP_CONTENT
                     ).apply {
                         marginStart = 5
                         marginEnd = 15
+                        topMargin = 0
+                        bottomMargin = 0
                     }
                     news.setOnClickListener {
                         startActivity(
@@ -443,26 +466,29 @@ class HomeFragment : Fragment() {
                     }
                     row.addView(news)
                 }
-                table.addView(row)
+                handler.post {
+                    table.addView(row)
+                }
             }
         }
-        reloadBtn.setOnClickListener {
-            if (loaderView.visibility == View.VISIBLE) return@setOnClickListener
-            reloadBtn.animate().rotation(360f).setDuration(1000).start()
-            loaderView.visibility = View.VISIBLE
-            scrapers.getNews(
-                acc,
-                dataAge(allNews).coerceAtMost(15)
-            ) { foundNews ->
-                combineHashMaps(foundNews?: hashMapOf(),allNews).apply {
-                    entries.removeIf { it.key < (System.currentTimeMillis() - 1296000000) }
-                    storage.saveNotices(acc.ID, this)
-                    activity().runOnUiThread {
-                        loaderView.visibility = View.GONE
-                        initialiseNotice(acc, this)
+        handler.post {
+            reloadBtn.setOnClickListener {
+                if (loaderView.visibility == View.VISIBLE) return@setOnClickListener
+                reloadBtn.animate().rotation(360f).setDuration(1000).start()
+                loaderView.visibility = View.VISIBLE
+                scrapers.getNews(
+                    acc,
+                    dataAge(allNews).coerceAtMost(15)
+                ) { foundNews ->
+                    combineHashMaps(foundNews ?: hashMapOf(), allNews).apply {
+                        entries.removeIf { it.key < (System.currentTimeMillis() - 1296000000) }
+                        storage.saveNotices(acc.ID, this)
+                        handler.post {
+                            loaderView.visibility = View.GONE
+                            initialiseNotice(acc, this)
+                        }
                     }
                 }
-
             }
         }
     }
@@ -471,8 +497,10 @@ class HomeFragment : Fragment() {
         val refreshBtn = requireView().findViewById<ImageView>(R.id.attendanceRefresh)
         val attendanceTable = requireView().findViewById<TableLayout>(R.id.attendanceTable)
         val loaderView = requireView().findViewById<TextView>(R.id.loadingAttendance)
-        loaderView.visibility = View.GONE
-        attendanceTable.removeAllViews()
+        handler.post {
+            loaderView.visibility = View.GONE
+            attendanceTable.removeAllViews()
+        }
         try {
             val headingRow = TableRow(context)
             headingRow.addView(TextView(context).apply {
@@ -500,7 +528,9 @@ class HomeFragment : Fragment() {
                 }
             }
             headingRow.addView(TextView(context).apply { text = "\t\t" })
-            attendanceTable.addView(headingRow)
+            handler.post {
+                attendanceTable.addView(headingRow)
+            }
             storage.getAttendance(acc.ID).subjects.forEach { sub ->
                 val row = TableRow(context)
                 val name = TextView(context)
@@ -519,23 +549,33 @@ class HomeFragment : Fragment() {
                         }
                         row.addView(text)
                     }
-                attendanceTable.addView(row)
+                handler.post {
+                    attendanceTable.addView(row)
+                }
             }
         } catch (_: Exception) {
         }
-        refreshBtn.setOnClickListener {
-            if (loaderView.visibility == View.VISIBLE) return@setOnClickListener
-            refreshBtn.animate().rotation(360f).setDuration(1000).start()
-            loaderView.visibility = View.VISIBLE
-            scrapers.retrieveAttendance(acc) {
-                activity().runOnUiThread {
-                    if (it != null) {
-                        storage.saveAttendance(acc.ID, it)
-                        initialiseAttendance(acc)
-                    } else {
-                        Toast.makeText(context, "Failed to reload.", Toast.LENGTH_SHORT).show()
+        handler.post {
+            refreshBtn.setOnClickListener {
+                if (loaderView.visibility == View.VISIBLE) return@setOnClickListener
+                refreshBtn.animate().rotation(360f).setDuration(1000).start()
+                loaderView.visibility = View.VISIBLE
+                scrapers.retrieveAttendance(acc) {
+                    handler.post {
+                        if (it != null) {
+                            storage.saveAttendance(acc.ID, it.apply {
+                                absence = combineHashMaps(
+                                    absence,
+                                    storage.getAttendance(acc.ID).absence,
+                                    15
+                                )
+                            })
+                            initialiseAttendance(acc)
+                        } else {
+                            Toast.makeText(context, "Failed to reload.", Toast.LENGTH_SHORT).show()
+                        }
+                        loaderView.visibility = View.GONE
                     }
-                    loaderView.visibility = View.GONE
                 }
             }
         }
@@ -544,7 +584,9 @@ class HomeFragment : Fragment() {
 
     private fun initialiseAbsence(acc: Account) {
         val table = requireView().findViewById<TableLayout>(R.id.absenceTable)
-        table.removeAllViews()
+        handler.post {
+            table.removeAllViews()
+        }
         try {
             val days =
                 storage.getAttendance(acc.ID).absence.entries.sortedByDescending { it.key }
@@ -573,7 +615,9 @@ class HomeFragment : Fragment() {
                     }
                     row.addView(news)
                 }
-                table.addView(row)
+                handler.post {
+                    table.addView(row)
+                }
             }
         } catch (_: Exception) {
         }
@@ -730,25 +774,5 @@ class HomeFragment : Fragment() {
                 absenceIntent
             )
         } else alarmManager.cancel(absenceIntent)
-    }
-
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment HomeFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            HomeFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
-                }
-            }
     }
 }

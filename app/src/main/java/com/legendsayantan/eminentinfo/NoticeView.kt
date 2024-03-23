@@ -9,6 +9,7 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -16,6 +17,7 @@ import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
+import com.google.android.material.card.MaterialCardView
 import com.legendsayantan.eminentinfo.utils.Misc
 import com.rajat.pdfviewer.PdfRendererView
 import java.text.SimpleDateFormat
@@ -35,6 +37,7 @@ class NoticeView : AppCompatActivity() {
         external.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK })
         }
+
         if(url.contains(".pdf")){
             imageView.visibility = View.GONE
             try {

@@ -4,6 +4,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -30,17 +31,38 @@ class MainActivity : AppCompatActivity() {
         }
     }
     fun reloadUI(){
-        supportFragmentManager.beginTransaction().replace(R.id.container, Fragment()).commit()
-        supportFragmentManager.beginTransaction().replace(
-            R.id.container, if (appStorage.getAllAccounts().isEmpty()) {
-                LoginFragment()
-            } else {
-                HomeFragment()
-            }
-        ).commit()
+        val currentFragment = supportFragmentManager.findFragmentById(R.id.container)
+        val fragmentToShow = if (appStorage.getAllAccounts().isEmpty()) {
+            LoginFragment()
+        } else {
+            HomeFragment()
+        }
+        val toBeRefreshed = currentFragment!=null && (currentFragment is HomeFragment == fragmentToShow is HomeFragment)
+        if(toBeRefreshed)
+            supportFragmentManager.beginTransaction().setCustomAnimations(
+                R.anim.slide_in_right, // Enter animation for the new fragment
+                R.anim.slide_out_left, // Exit animation for the old fragment
+                R.anim.slide_in_left, // Enter animation for the old fragment (on back press)
+                R.anim.slide_out_right // Exit animation for the new fragment (on back press)
+            ).remove(currentFragment!!).commit()
+        Handler(mainLooper).postDelayed({
+            supportFragmentManager.beginTransaction().setCustomAnimations(
+                R.anim.slide_in_right, // Enter animation for the new fragment
+                R.anim.slide_out_left, // Exit animation for the old fragment
+                R.anim.slide_in_left, // Enter animation for the old fragment (on back press)
+                R.anim.slide_out_right // Exit animation for the new fragment (on back press)
+            ).replace(
+                R.id.container, fragmentToShow
+            ).commit()
+        },if(toBeRefreshed) 350 else 0)
     }
     fun addNewAccount(){
-        supportFragmentManager.beginTransaction().replace(
+        supportFragmentManager.beginTransaction().setCustomAnimations(
+            R.anim.slide_in_left,
+            R.anim.slide_out_right,
+            R.anim.slide_in_right,
+            R.anim.slide_out_left
+        ).replace(
             R.id.container, LoginFragment()
         ).commit()
     }

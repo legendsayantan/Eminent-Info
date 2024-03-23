@@ -236,18 +236,25 @@ class Misc {
             return abbreviatedParts.joinToString(", ")
         }
 
-        fun combineHashMaps(map1:HashMap<Long,String>, map2:HashMap<Long,String>): HashMap<Long,String>{
-            map1.forEach { news ->
-                if (map2.entries.find { it.value.split("?Expires")[0] == news.value.split("?Expires")[0] } == null) map2[news.key] = news.value
+        fun combineHashMaps(oldMap:HashMap<Long,String>, newMap:HashMap<Long,String>, removeOlderThan : Int = 0): HashMap<Long,String>{
+            oldMap.forEach { news ->
+                if (newMap.entries.find { it.value.split("?Expires")[0] == news.value.split("?Expires")[0] } == null)
+                    if (removeOlderThan>0) {
+                        if (dateDifference(System.currentTimeMillis(),news.key)<removeOlderThan) newMap[news.key] = news.value
+                    }else newMap[news.key] = news.value
             }
-            return map2
+            return newMap
         }
 
         fun dataAge(data: HashMap<Long, String>): Int {
             return Calendar.getInstance().apply {
                 timeInMillis =
-                    (System.currentTimeMillis() - (data.maxOfOrNull { it.key } ?: 0))
-            }.get(Calendar.DAY_OF_YEAR) + 1
+                    (System.currentTimeMillis() - (data.maxOfOrNull { it.key } ?: 1))
+            }.get(Calendar.DAY_OF_YEAR)
+        }
+
+        fun String.shortenBatch():String{
+            return replace("Batch :", "").replace("Semester","Sem").replace(" - "," · ").trim()
         }
     }
 }

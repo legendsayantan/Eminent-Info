@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.legendsayantan.eminentinfo.utils.AppStorage
+import com.legendsayantan.eminentinfo.utils.Misc
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.beautifyCase
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.dateDifference
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.sendNotification
@@ -21,9 +22,15 @@ class AbsenceReceiver : BroadcastReceiver() {
                     //check absence
                     Scrapers(context).retrieveAttendance(acc) { att ->
                         if (att != null) {
-                            storage.saveAttendance(acc.ID,att)
+                            storage.saveAttendance(acc.ID,att.apply {
+                                absence = Misc.combineHashMaps(
+                                    absence,
+                                    storage.getAttendance(acc.ID).absence,
+                                    15
+                                )
+                            })
                             val absent =
-                                att.absence.filter { dateDifference(System.currentTimeMillis(),it.key)==0}
+                                att.absence.filter { dateDifference(System.currentTimeMillis(),it.key)==0 }
                             if (absent.isNotEmpty()) {
                                 context.sendNotification(
                                     "${acc.name} was marked as absent today in the following :",

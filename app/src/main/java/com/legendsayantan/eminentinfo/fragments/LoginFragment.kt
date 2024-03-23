@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import androidx.core.view.children
 import androidx.fragment.app.FragmentActivity
 import com.google.android.material.button.MaterialButton
@@ -28,6 +29,7 @@ private const val ARG_PARAM2 = "param2"
  * create an instance of this fragment.
  */
 class LoginFragment : Fragment() {
+    private val passwordField by lazy { view?.findViewById<TextInputEditText>(R.id.password) }
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -42,27 +44,40 @@ class LoginFragment : Fragment() {
         activityCache = requireActivity()
         val loginButton = view.findViewById<MaterialButton>(R.id.loginBtn)
         val githubLink = view.findViewById<MaterialTextView>(R.id.githubLink)
+        val passwordToggle = view.findViewById<ImageView>(R.id.password_toggle)
+        val backBtn = view.findViewById<MaterialCardView>(R.id.goBack)
+        passwordField?.inputType = 129
+        passwordToggle.setOnClickListener {
+            if (passwordField?.inputType == 129) {
+                passwordField?.inputType = 145
+                passwordToggle.setImageResource(R.drawable.baseline_visibility_off_24)
+            } else {
+                passwordField?.inputType = 129
+                passwordToggle.setImageResource(R.drawable.baseline_visibility_24)
+            }
+        }
         loginButton.setOnClickListener {
             loginButton.error = null
-            attemptLogin{  name,success->
-                if(success){
+            attemptLogin { name, success ->
+                if (success) {
                     requireView().findViewById<MaterialCardView>(R.id.materialCardView).children.forEach {
                         it.visibility = View.GONE
                     }
+                    backBtn.visibility = View.GONE
                     requireView().findViewById<MaterialTextView>(R.id.heading).alpha = 0f
                     Timer().schedule(timerTask {
-                        activity().runOnUiThread{
+                        activity().runOnUiThread {
                             requireView().findViewById<MaterialTextView>(R.id.heading).let {
                                 it.textSize = 30f
                                 it.text = "Welcome\n$name"
                                 it.animate().alpha(1f).setDuration(1000).start()
                                 Timer().schedule(timerTask {
                                     activity().runOnUiThread { activity().reloadUI() }
-                                },2000)
+                                }, 2000)
                             }
                         }
-                    },1000)
-                }else{
+                    }, 1000)
+                } else {
                     loginButton.error = "Invalid Credentials"
                 }
             }
@@ -70,43 +85,49 @@ class LoginFragment : Fragment() {
         githubLink.setOnClickListener {
             context.launchUrlInBrowser("https://github.com/legendsayantan")
         }
-
+        if(activity().appStorage.getAllAccounts().isNotEmpty()) backBtn.visibility = View.VISIBLE
+        backBtn.setOnClickListener {
+            activity().reloadUI()
+        }
     }
 
     override fun getContext(): Context {
-        return super.getContext()?: contextCache
+        return super.getContext() ?: contextCache
     }
-    private lateinit var contextCache : Context
+
+    private lateinit var contextCache: Context
 
     private fun activity(): MainActivity {
-        return (super.getActivity()?: activityCache) as MainActivity
+        return (super.getActivity() ?: activityCache) as MainActivity
     }
-    private lateinit var activityCache : FragmentActivity
-    private fun attemptLogin(callback:(String,Boolean)->Unit){
+
+    private lateinit var activityCache: FragmentActivity
+    private fun attemptLogin(callback: (String, Boolean) -> Unit) {
         val ID = view?.findViewById<TextInputEditText>(R.id.fedenaID)?.text.toString().uppercase()
-        val password = view?.findViewById<TextInputEditText>(R.id.password)?.text.toString()
-        if(ID.isEmpty()
+        val password = passwordField?.text.toString()
+        if (ID.isEmpty()
             || password.isEmpty()
-            || (!ID.contains("ECMT") && !ID.contains("ECPT"))){
-            callback("",false)
+            || (!ID.contains("ECMT") && !ID.contains("ECPT"))
+        ) {
+            callback("", false)
             return
         }
         Scrapers(activity()).let { scraper ->
-            scraper.retrieveSessionKey(ID,password){ account ->
-            if(account != null){
-                activity().appStorage.saveAccount(account)
-                callback(account.name,true)
-                scraper.getMoreInfo(account) {
-                    it?.split("\n,").let { part ->
-                        account.course = part?.get(0)?.trim() ?: ""
-                        account.batch = part?.get(1)?.trim() ?: ""
-                    }
+            scraper.retrieveSessionKey(ID, password) { account ->
+                if (account != null) {
                     activity().appStorage.saveAccount(account)
+                    callback(account.name, true)
+                    scraper.getMoreInfo(account) {
+                        it?.split("\n,").let { part ->
+                            account.course = part?.get(0)?.trim() ?: ""
+                            account.batch = part?.get(1)?.trim() ?: ""
+                        }
+                        activity().appStorage.saveAccount(account)
+                    }
+                } else {
+                    callback("", false)
                 }
-            }else{
-                callback("",false)
             }
-        }
         }
     }
 
