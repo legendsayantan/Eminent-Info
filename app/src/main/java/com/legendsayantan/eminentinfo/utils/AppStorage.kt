@@ -74,4 +74,17 @@ class AppStorage(context: Context) {
     fun saveNotices(ID:String, notices:HashMap<Long,String>){
         this.notices.edit().putString(ID, Gson().toJson(notices)).apply()
     }
+
+    fun updateNoticeUrl(account: Account,dateKey:Long,url: String) {
+        getNotices(account.ID).let {
+            it[dateKey] = url
+            saveNotices(account.ID,it)
+        }
+        try {
+            onNoticeUpdated()
+        }catch (_:Exception){}
+    }
+    companion object{
+        var onNoticeUpdated = {}
+    }
 }

@@ -43,6 +43,7 @@ import com.legendsayantan.eminentinfo.data.Account
 import com.legendsayantan.eminentinfo.receivers.AbsenceReceiver
 import com.legendsayantan.eminentinfo.receivers.BirthdayNotice
 import com.legendsayantan.eminentinfo.receivers.PhaseNotifier
+import com.legendsayantan.eminentinfo.utils.AppStorage
 import com.legendsayantan.eminentinfo.utils.Misc
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.abbreviateNames
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.beautifyCase
@@ -112,6 +113,9 @@ class HomeFragment : Fragment() {
             initialiseAttendance(acc)
         }, 500)
         initialiseNotifications(acc)
+        AppStorage.onNoticeUpdated = {
+            initialiseNotice(acc)
+        }
     }
 
     override fun onResume() {
@@ -462,6 +466,7 @@ class HomeFragment : Fragment() {
                             ).apply {
                                 putExtra("date", mutableEntry.key)
                                 putExtra("url", mutableEntry.value)
+                                putExtra("account",acc.toJson())
                             })
                     }
                     row.addView(news)

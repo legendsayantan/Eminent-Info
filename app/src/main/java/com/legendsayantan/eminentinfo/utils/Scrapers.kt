@@ -419,44 +419,8 @@ class Scrapers(val context: Context) {
                 calendar.set(Calendar.MINUTE, 0)
                 val list = hashMapOf<Long, String>()
                 for (i in 0..pastDays) {
-                    val formData = mapOf(
-                        "palette[cur_date]" to "${calendar.get(Calendar.YEAR)}-${
-                            calendar.get(
-                                Calendar.MONTH
-                            ) + 1
-                        }-${
-                            calendar.get(
-                                Calendar.DAY_OF_MONTH
-                            )
-                        }",
-                        "palette[palette_name]" to "news"
-                    )
-                    val response: Connection.Response = Jsoup.connect(usedUrl)
-                        .data(formData)
-                        .cookie("_fedena_session_", account.sessionKey)
-                        .referrer(getBaseUrl(account.ID) + "/data_palettes")
-                        .header("Origin", getBaseUrl(account.ID))
-                        .header("X-Csrf-Token", account.csrfToken)
-                        .method(Connection.Method.POST)
-                        .execute()
-                    val doc = response.parse()
-                    doc.getElementsByClass("portlet-subcontent").forEach {
-                        if (it.getElementsByTag("a").size > 0) {
-                            val loadNotice =
-                                getBaseUrl(account.ID) + it.getElementsByTag("a")[0]?.attr("href")
-                            val notice = Jsoup.connect(loadNotice)
-                                .cookie("_fedena_session_", account.sessionKey)
-                                .referrer(getBaseUrl(account.ID) + "/data_palettes")
-                                .header("Origin", getBaseUrl(account.ID))
-                                .method(Connection.Method.GET)
-                                .execute()
-                            list[calendar.timeInMillis] =
-                                notice.parse().getElementById("attachments_list")
-                                    ?.getElementsByTag("a")
-                                    ?.get(0)
-                                    ?.attr("href") ?: ""
-                            calendar.add(Calendar.MINUTE, 1)
-                        }
+                    getNewsOfDate(account,calendar){
+                        list.putAll(it?: hashMapOf())
                     }
                     calendar.add(Calendar.DAY_OF_YEAR, -1)
                 }
@@ -466,6 +430,54 @@ class Scrapers(val context: Context) {
                 callback(null)
             }
         }.start()
+    }
+
+    fun getNewsOfDate(
+        account: Account,calendar: Calendar,
+        callback: (HashMap<Long, String>?) -> Unit
+    ){
+        val list = hashMapOf<Long, String>()
+        val usedUrl = "${getBaseUrl(account.ID)}/data_palettes/update_palette"
+        val formData = mapOf(
+            "palette[cur_date]" to "${calendar.get(Calendar.YEAR)}-${
+                calendar.get(
+                    Calendar.MONTH
+                ) + 1
+            }-${
+                calendar.get(
+                    Calendar.DAY_OF_MONTH
+                )
+            }",
+            "palette[palette_name]" to "news"
+        )
+        val response: Connection.Response = Jsoup.connect(usedUrl)
+            .data(formData)
+            .cookie("_fedena_session_", account.sessionKey)
+            .referrer(getBaseUrl(account.ID) + "/data_palettes")
+            .header("Origin", getBaseUrl(account.ID))
+            .header("X-Csrf-Token", account.csrfToken)
+            .method(Connection.Method.POST)
+            .execute()
+        val doc = response.parse()
+        doc.getElementsByClass("portlet-subcontent").forEach {
+            if (it.getElementsByTag("a").size > 0) {
+                val loadNotice =
+                    getBaseUrl(account.ID) + it.getElementsByTag("a")[0]?.attr("href")
+                val notice = Jsoup.connect(loadNotice)
+                    .cookie("_fedena_session_", account.sessionKey)
+                    .referrer(getBaseUrl(account.ID) + "/data_palettes")
+                    .header("Origin", getBaseUrl(account.ID))
+                    .method(Connection.Method.GET)
+                    .execute()
+                list[calendar.timeInMillis] =
+                    notice.parse().getElementById("attachments_list")
+                        ?.getElementsByTag("a")
+                        ?.get(0)
+                        ?.attr("href") ?: ""
+                calendar.add(Calendar.MINUTE, 1)
+            }
+        }
+        callback(list)
     }
 
     fun getMoreInfo(account: Account, callback: (String?) -> Unit) {
