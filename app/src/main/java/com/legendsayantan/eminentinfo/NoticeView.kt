@@ -117,13 +117,15 @@ class NoticeView : AppCompatActivity() {
                                 Handler(mainLooper).post {
                                     callback(it.values.first())
                                 }
-                                AppStorage(this).updateNoticeUrl(account,date,it.values.first())
                             } else {
                                 Handler(mainLooper).post {
                                     callback("")
                                 }
                             }
                         }
+                    }
+                    news?.forEach {
+                        AppStorage(this).updateNoticeUrl(account,it.key,it.value)
                     }
                 }
             }.start()

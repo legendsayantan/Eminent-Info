@@ -486,7 +486,6 @@ class HomeFragment : Fragment() {
                     dataAge(allNews).coerceAtMost(15)
                 ) { foundNews ->
                     combineHashMaps(foundNews ?: hashMapOf(), allNews).apply {
-                        entries.removeIf { it.key < (System.currentTimeMillis() - 1296000000) }
                         storage.saveNotices(acc.ID, this)
                         handler.post {
                             loaderView.visibility = View.GONE

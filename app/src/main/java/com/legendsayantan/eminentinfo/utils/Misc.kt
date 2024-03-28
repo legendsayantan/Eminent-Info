@@ -215,32 +215,34 @@ class Misc {
         fun extractNoticeName(url: String): String? {
             val splits = Uri.decode(url)
                 .split(".pdf")[0]
-                    .split(".jpg")[0]
-                        .split("/")
+                .split(".jpg")[0]
+                .split("/")
             splits[splits.size - 1].let {
-                return if(it.contains("new_doc",true) || it.length<5 ) null
-                else it.replace("_notice", "",true)
-                    .replace("notice", "",true)
+                return if (it.contains("new_doc", true) || it.length < 5) null
+                else it.replace("_notice", "", true)
+                    .replace("notice", "", true)
                     .replace("_", " ")
-                    .replace("semester","sem",true)
-                    .replace("for","-",true)
-                    .replace(" and",",",true)
+                    .replace("semester", "sem", true)
+                    .replace("for", "-", true)
+                    .replace(" and", ",", true)
                     .replace("\\(.*?\\)".toRegex(), "")
                     .beautifyCase()
             }
         }
+
         fun String.abbreviateNames(skip: Int = 0): String {
             val parts = split(", ")
             val abbreviatedParts = parts.take(skip.coerceAtMost(parts.size)) +
-                    parts.drop(skip.coerceAtMost(parts.size)).map { it.split(" ")[0][0] + ". " + it.split(" ")[1] }
+                    parts.drop(skip.coerceAtMost(parts.size))
+                        .map { it.split(" ")[0][0] + ". " + it.split(" ")[1] }
             return abbreviatedParts.joinToString(", ")
         }
 
         fun combineHashMaps(oldMap:HashMap<Long,String>, newMap:HashMap<Long,String>, removeOlderThan : Int = 0): HashMap<Long,String>{
             oldMap.forEach { news ->
                 if (newMap.entries.find { it.value.split("?Expires")[0] == news.value.split("?Expires")[0] } == null)
-                    if (removeOlderThan>0) {
-                        if (dateDifference(System.currentTimeMillis(),news.key)<removeOlderThan) newMap[news.key] = news.value
+                    if (oldMap.size > 7 && removeOlderThan > 0) {
+                        if (dateDifference(System.currentTimeMillis(),news.key) < removeOlderThan) newMap[news.key] = news.value
                     }else newMap[news.key] = news.value
             }
             return newMap
@@ -253,8 +255,8 @@ class Misc {
             }.get(Calendar.DAY_OF_YEAR)
         }
 
-        fun String.shortenBatch():String{
-            return replace("Batch :", "").replace("Semester","Sem").replace(" - "," · ").trim()
+        fun String.shortenBatch(): String {
+            return replace("Batch :", "").replace("Semester", "Sem").replace(" - ", " · ").trim()
         }
     }
 }
