@@ -22,6 +22,7 @@
             android:layout_height="35dp">
             <ImageView
                 android:id="@+id/image"
+                android:src="@drawable/baseline_person_24"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
         </com.google.android.material.card.MaterialCardView>

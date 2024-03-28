@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.Handler
 import com.legendsayantan.eminentinfo.data.Account
 import com.legendsayantan.eminentinfo.data.AccountAttendance
-import com.legendsayantan.eminentinfo.data.Birthday
+import com.legendsayantan.eminentinfo.data.PersonInfo
 import com.legendsayantan.eminentinfo.data.DaySlots
 import com.legendsayantan.eminentinfo.data.PeriodSlot
 import com.legendsayantan.eminentinfo.data.SubjectAttendance
@@ -367,7 +367,7 @@ class Scrapers(val context: Context) {
     fun getBirthdays(
         account: Account,
         calendar: Calendar,
-        callback: (ArrayList<Birthday>?) -> Unit
+        callback: (ArrayList<PersonInfo>?) -> Unit
     ) {
         val usedUrl = "${getBaseUrl(account.ID)}/data_palettes/update_palette"
         Thread {
@@ -388,11 +388,11 @@ class Scrapers(val context: Context) {
                     .header("X-Csrf-Token", account.csrfToken)
                     .method(Connection.Method.POST)
                     .execute()
-                val list = arrayListOf<Birthday>()
+                val list = arrayListOf<PersonInfo>()
                 val doc = response.parse()
                 doc.getElementsByClass("birthday-subcontent").forEach {
                     list.add(
-                        Birthday(
+                        PersonInfo(
                             it.getElementsByClass("subcontent-header")[0].text().beautifyCase(),
                             it.getElementsByClass("subcontent-info")[0].text().shortenBatch(),
                             it.getElementsByTag("img")[0].attr("src")
@@ -419,8 +419,8 @@ class Scrapers(val context: Context) {
                 calendar.set(Calendar.MINUTE, 0)
                 val list = hashMapOf<Long, String>()
                 for (i in 0..pastDays) {
-                    getNewsOfDate(account,calendar){
-                        list.putAll(it?: hashMapOf())
+                    getNewsOfDate(account, calendar) {
+                        list.putAll(it ?: hashMapOf())
                     }
                     calendar.add(Calendar.DAY_OF_YEAR, -1)
                 }
@@ -433,9 +433,9 @@ class Scrapers(val context: Context) {
     }
 
     fun getNewsOfDate(
-        account: Account,calendar: Calendar,
+        account: Account, calendar: Calendar,
         callback: (HashMap<Long, String>?) -> Unit
-    ){
+    ) {
         val list = hashMapOf<Long, String>()
         val usedUrl = "${getBaseUrl(account.ID)}/data_palettes/update_palette"
         val formData = mapOf(
@@ -494,6 +494,11 @@ class Scrapers(val context: Context) {
                 val info = doc.getElementById("student_main_info")?.getElementsByTag("h4")
                 callback(info?.subList(0, 2)?.joinToString { it.text() + "\n" }
                     ?.replace("Course :", "")?.replace("Batch :", "")?.trim())
+                val images = Images(context)
+                doc.getElementById("profile_picture_display")?.getElementsByTag("img")?.get(0)?.let {
+                        images.loadFromUrl(it.attr("src"))
+                            ?.let { it1 -> images.saveProfilePic(account.ID, it1) }
+                    }
             } catch (e: IOException) {
                 e.printStackTrace()
                 callback(null)

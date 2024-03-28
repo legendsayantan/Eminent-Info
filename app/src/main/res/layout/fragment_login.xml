@@ -133,11 +133,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center">
-                <ImageView
-                    android:src="@drawable/pdf_viewer_ic_arrow_back"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:tint="@color/light_blue" />
                 <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -146,6 +141,12 @@
                     android:layout_marginHorizontal="3dp"
                     android:textColor="@color/light_blue"
                     android:textSize="18sp" />
+                <ImageView
+                    android:rotation="180"
+                    android:src="@drawable/pdf_viewer_ic_arrow_back"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:tint="@color/light_blue" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </androidx.constraintlayout.widget.ConstraintLayout>

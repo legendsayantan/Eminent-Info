@@ -17,7 +17,6 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.BaseAdapter
 import android.widget.CompoundButton
 import android.widget.ImageView
@@ -28,8 +27,8 @@ import android.widget.TableRow
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
-import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
+import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -37,13 +36,15 @@ import com.google.android.material.materialswitch.MaterialSwitch
 import com.legendsayantan.eminentinfo.MainActivity
 import com.legendsayantan.eminentinfo.NoticeView
 import com.legendsayantan.eminentinfo.R
-import com.legendsayantan.eminentinfo.adapters.BirthdayListAdapter
+import com.legendsayantan.eminentinfo.adapters.PersonInfoAdapter
 import com.legendsayantan.eminentinfo.adapters.ViewPagerAdapter
 import com.legendsayantan.eminentinfo.data.Account
+import com.legendsayantan.eminentinfo.data.PersonInfo
 import com.legendsayantan.eminentinfo.receivers.AbsenceReceiver
 import com.legendsayantan.eminentinfo.receivers.BirthdayNotice
 import com.legendsayantan.eminentinfo.receivers.PhaseNotifier
 import com.legendsayantan.eminentinfo.utils.AppStorage
+import com.legendsayantan.eminentinfo.utils.Images
 import com.legendsayantan.eminentinfo.utils.Misc
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.abbreviateNames
 import com.legendsayantan.eminentinfo.utils.Misc.Companion.beautifyCase
@@ -57,7 +58,6 @@ import com.legendsayantan.eminentinfo.utils.Scrapers
 import java.text.SimpleDateFormat
 import java.time.DayOfWeek
 import java.util.Calendar
-import java.util.Date
 import java.util.Timer
 import kotlin.concurrent.timerTask
 import kotlin.math.abs
@@ -94,9 +94,17 @@ class HomeFragment : Fragment() {
         val acc = storage.getActiveAccount()
         val nameView = view.findViewById<TextView>(R.id.name)
         val infoView = view.findViewById<LinearLayout>(R.id.accInfo)
+        val profilePic = view.findViewById<ImageView>(R.id.profilePic)
         view.findViewById<TextView>(R.id.ID).text = acc.ID
         nameView.text = acc.name
         infoView.visibility = View.GONE
+        val image = Images(context).getProfilePic(acc.ID)
+        if(image==null){
+            profilePic.imageTintList = ColorStateList.valueOf(resources.getColor(R.color.mid, null))
+            profilePic.translationY = 8f
+            profilePic.scaleX = 1.2f
+            profilePic.scaleY = 1.2f
+        }else Glide.with(context).load(image).circleCrop().into(profilePic)
         nameView.setOnClickListener {
             if (infoView.visibility == View.VISIBLE) {
                 infoView.visibility = View.GONE
@@ -130,6 +138,7 @@ class HomeFragment : Fragment() {
         cardView.strokeWidth = 5
         cardView.strokeColor = resources.getColor(R.color.mid, null)
         cardView.radius = 75f
+        cardView.alpha = 0.75f
         val container = LinearLayout(context)
         container.orientation = LinearLayout.VERTICAL
         container.layoutParams = LinearLayout.LayoutParams(
@@ -148,10 +157,7 @@ class HomeFragment : Fragment() {
             LinearLayout.LayoutParams.WRAP_CONTENT
         )
         title.gravity = Gravity.CENTER
-        val adapter = ArrayAdapter(
-            context,
-            android.R.layout.simple_list_item_1,
-            storage.getAllAccounts().filter { it.ID != acc.ID }.map { it.name })
+        val adapter = PersonInfoAdapter(context, storage.getAllAccounts().filter { it.ID != acc.ID }.map { PersonInfo(it.name,it.ID,"local://${it.ID}") })
         list.divider = null
         list.adapter = adapter
         val addNew = MaterialButton(context)
@@ -336,7 +342,9 @@ class HomeFragment : Fragment() {
                     handler.post {
                         container.addView(viewPager)
                     }
-                    if (index + 1 != viewPagers.size) container.addView(textView)
+                    if (index + 1 != viewPagers.size) handler.post {
+                        container.addView(textView)
+                    }
                     viewPager.isUserInputEnabled = true
                     viewPager.adapter = adapter
                 }
@@ -388,7 +396,7 @@ class HomeFragment : Fragment() {
                     scrapers.getBirthdays(acc, Calendar.getInstance()) {
                         handler.post {
                             if (it != null) {
-                                val adapter = BirthdayListAdapter(context, it)
+                                val adapter = PersonInfoAdapter(context, it)
                                 listView.adapter = adapter
                                 updateItems(listView, adapter)
                                 initialiseBirthdays(acc, !collapsed)
@@ -400,7 +408,7 @@ class HomeFragment : Fragment() {
                     }
                 } else {
                     listView.adapter = null
-                    updateItems(listView, BirthdayListAdapter(context, listOf()))
+                    updateItems(listView, PersonInfoAdapter(context, listOf()))
                     initialiseBirthdays(acc, !collapsed)
                 }
             }
@@ -518,7 +526,7 @@ class HomeFragment : Fragment() {
                 setPadding(10, 10, 20, 10)
             })
             val discarded = arrayListOf<Int>()
-            storage.getAttendance(acc.ID).subjects[0].attend.entries.sortedBy { it.key }.forEach {
+            storage.getAttendance(acc.ID).subjects[0].attend.entries.sortedByDescending { it.key }.forEach {
                 if (it.value == 0f) {
                     discarded.add(it.key)
                 } else {
@@ -542,7 +550,7 @@ class HomeFragment : Fragment() {
                 name.text = sub.name
                 name.textSize = 15f
                 row.addView(name)
-                sub.attend.entries.filter { !discarded.contains(it.key) }.sortedBy { it.key }
+                sub.attend.entries.filter { !discarded.contains(it.key) }.sortedByDescending { it.key }
                     .forEach {
                         val text = TextView(context)
                         text.text = "${it.value}%"
@@ -569,7 +577,7 @@ class HomeFragment : Fragment() {
                         if (it != null) {
                             storage.saveAttendance(acc.ID, it.apply {
                                 val savedAbsence = storage.getAttendance(acc.ID).absence
-                                absence = combineHashMaps(
+                                if(savedAbsence!=null) absence = combineHashMaps(
                                     absence,
                                     savedAbsence,
                                     15
