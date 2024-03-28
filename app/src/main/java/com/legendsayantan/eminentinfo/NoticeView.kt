@@ -123,9 +123,7 @@ class NoticeView : AppCompatActivity() {
                                 }
                             }
                         }
-                    }
-                    news?.forEach {
-                        AppStorage(this).updateNoticeUrl(account,it.key,it.value)
+                        AppStorage(this).updateNoticesFor(account,date,news)
                     }
                 }
             }.start()

@@ -483,7 +483,7 @@ class HomeFragment : Fragment() {
                 loaderView.visibility = View.VISIBLE
                 scrapers.getNews(
                     acc,
-                    dataAge(allNews).coerceAtMost(15)
+                    dataAge(allNews).coerceAtMost(20)
                 ) { foundNews ->
                     combineHashMaps(foundNews ?: hashMapOf(), allNews).apply {
                         storage.saveNotices(acc.ID, this)
@@ -568,9 +568,10 @@ class HomeFragment : Fragment() {
                     handler.post {
                         if (it != null) {
                             storage.saveAttendance(acc.ID, it.apply {
+                                val savedAbsence = storage.getAttendance(acc.ID).absence
                                 absence = combineHashMaps(
                                     absence,
-                                    storage.getAttendance(acc.ID).absence,
+                                    savedAbsence,
                                     15
                                 )
                             })

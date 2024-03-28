@@ -26,6 +26,9 @@ class AppStorage(context: Context) {
 
     fun deleteAccount(account: Account){
         accounts.edit().remove(account.ID).apply()
+        deleteTimeTable(account.ID)
+        deleteNotices(account.ID)
+        deleteAllAttendance(account.ID)
     }
 
     fun getActiveAccount():Account{
@@ -49,6 +52,10 @@ class AppStorage(context: Context) {
         return Gson().fromJson(timetables.getString(ID,"{}"),TimeTable::class.java)
     }
 
+    fun deleteTimeTable(ID:String){
+        timetables.edit().remove(ID).apply()
+    }
+
     val notifications = context.getSharedPreferences("notifications",Context.MODE_PRIVATE)
 
     fun getNotificationSettings(ID:String):Array<Boolean>{
@@ -67,6 +74,10 @@ class AppStorage(context: Context) {
         attendance.edit().putString(ID, Gson().toJson(att)).apply()
     }
 
+    fun deleteAllAttendance(ID: String){
+        attendance.edit().remove(ID).apply()
+    }
+
     val notices = context.getSharedPreferences("notices",Context.MODE_PRIVATE)
     fun getNotices(ID:String):HashMap<Long,String>{
         return Gson().fromJson(notices.getString(ID,"{}"),HashMap::class.java).mapKeys { it.key.toString().toLong() } as HashMap<Long, String>
@@ -75,14 +86,17 @@ class AppStorage(context: Context) {
         this.notices.edit().putString(ID, Gson().toJson(notices)).apply()
     }
 
-    fun updateNoticeUrl(account: Account,dateKey:Long,url: String) {
-        getNotices(account.ID).let {
-            it[dateKey] = url
-            saveNotices(account.ID,it)
-        }
+    fun updateNoticesFor(account: Account, date:Long, hashMap: HashMap<Long,String>) {
+        val a = getNotices(account.ID).entries
+        a.removeIf { Misc.dateDifference(it.key,date)==0 }
+        saveNotices(account.ID, Misc.combineHashMaps(a as HashMap<Long, String>,hashMap))
         try {
             onNoticeUpdated()
         }catch (_:Exception){}
+    }
+
+    fun deleteNotices(ID:String){
+        notices.edit().remove(ID).apply()
     }
     companion object{
         var onNoticeUpdated = {}
