@@ -2,15 +2,16 @@ package com.legendsayantan.eminentinfo
 
 import android.content.ClipboardManager
 import android.content.Context
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.view.WindowManager
 import android.widget.Toast
-import androidx.fragment.app.Fragment
+import androidx.appcompat.app.AppCompatActivity
 import com.legendsayantan.eminentinfo.fragments.HomeFragment
 import com.legendsayantan.eminentinfo.fragments.LoginFragment
 import com.legendsayantan.eminentinfo.utils.AppStorage
+import com.legendsayantan.eminentinfo.utils.GradleUpdate
+import kotlin.system.exitProcess
 
 class MainActivity : AppCompatActivity() {
     val appStorage by lazy { AppStorage(this) }
@@ -19,7 +20,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         window.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
         reloadUI()
-
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             //copy to clipboard
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -27,8 +27,13 @@ class MainActivity : AppCompatActivity() {
             clipboard.setPrimaryClip(clip)
             Toast.makeText(this,"Error copied to clipboard",Toast.LENGTH_LONG).show()
             //restart app
-            android.os.Process.killProcess(android.os.Process.myPid())
+            exitProcess(0)
         }
+        GradleUpdate(
+            applicationContext,
+            "https://cdn.jsdelivr.net/gh/legendsayantan/Eminent-Info@main/app/build.gradle",
+            259200
+        ).checkAndNotify("https://cdn.jsdelivr.net/gh/legendsayantan/Eminent-Info@raw/main/app/release/app-release.apk",R.drawable.baseline_download_24)
     }
     fun reloadUI(){
         val currentFragment = supportFragmentManager.findFragmentById(R.id.container)
@@ -47,10 +52,10 @@ class MainActivity : AppCompatActivity() {
             ).remove(currentFragment!!).commit()
         Handler(mainLooper).postDelayed({
             supportFragmentManager.beginTransaction().setCustomAnimations(
-                R.anim.slide_in_right, // Enter animation for the new fragment
-                R.anim.slide_out_left, // Exit animation for the old fragment
-                R.anim.slide_in_left, // Enter animation for the old fragment (on back press)
-                R.anim.slide_out_right // Exit animation for the new fragment (on back press)
+                R.anim.slide_in_right,
+                R.anim.slide_out_left,
+                R.anim.slide_in_left,
+                R.anim.slide_out_right
             ).replace(
                 R.id.container, fragmentToShow
             ).commit()
